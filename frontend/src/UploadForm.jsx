@@ -4,17 +4,6 @@ import { convertDatasetDocumentToResult } from "./utils";
 
 const API_URL = "http://localhost:5002";
 
-function formatSavedDate(value) {
-    if (!value) return "Date not available";
-    return new Date(value).toLocaleString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-}
-
 function UploadForm({ onResult }) {
     const [file, setFile] = useState(null);
     const [datasets, setDatasets] = useState([]);
@@ -263,7 +252,7 @@ function UploadForm({ onResult }) {
                                             {dataset.metadata?.dataset_name || "Unnamed Dataset"}
                                         </button>
                                         <span style={{ marginLeft: "8px" }}>
-                                            {dataset.metadata?.task_type || "unknown"} - saved {formatSavedDate(dataset.created_at)} - {dataset.dataset_id}
+                                            {dataset.metadata?.task_type || "unknown"} - {dataset.dataset_id}
                                         </span>
                                     </li>
                                 ))}

@@ -1,22 +1,34 @@
 import pandas as pd
+import re
+
+
+def _column_tokens(column_name: str) -> set[str]:
+    normalized = re.sub(r"[^a-zA-Z0-9]+", " ", column_name.lower())
+    return {token for token in normalized.split() if token}
 
 
 def detect_potential_personal_data(df: pd.DataFrame) -> list[str]:
-    suspicious_keywords = [
-        "name", "first_name", "last_name", "fullname",
-        "email", "mail",
-        "phone", "mobile",
-        "address", "street", "city", "zip", "postal", "postcode",
-        "id", "user_id", "person_id", "customer_id",
-        "ssn", "passport",
-        "birth", "dob",
-    ]
+    personal_tokens = {
+        "name", "firstname", "lastname", "fullname", "email", "mail",
+        "phone", "mobile", "address", "street", "city", "zip", "postal",
+        "postcode", "ssn", "passport", "birth", "dob", "patient",
+        "person", "customer", "user", "client", "employee", "resource",
+    }
+    identifier_subject_tokens = {
+        "patient", "person", "customer", "user", "client", "employee",
+        "encounter", "resource",
+    }
 
     detected_columns = []
 
     for col in df.columns:
-        col_lower = str(col).lower()
-        if any(keyword in col_lower for keyword in suspicious_keywords):
+        col_name = str(col)
+        tokens = _column_tokens(col_name)
+
+        has_personal_token = bool(tokens & personal_tokens)
+        has_person_related_id = "id" in tokens and bool(tokens & identifier_subject_tokens)
+
+        if has_personal_token or has_person_related_id:
             detected_columns.append(str(col))
     
     return detected_columns

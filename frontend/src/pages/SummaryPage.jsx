@@ -52,7 +52,7 @@ function SummaryPage({ result, onBack, goHome }) {
                     <p><strong>Dataset Name:</strong> {result.metadata?.dataset_name || "Not provided"}</p>
                     <p><strong>Origin:</strong> {result.metadata?.origin || "Not provided"}</p>
                     <p><strong>Intended Use:</strong> {result.metadata?.intended_use || "Not provided"}</p>
-                    <p><strong>Target Column:</strong> {result.metadata?.target_column || "Not provided"}</p>
+                    <p><strong>Target Column Name:</strong> {result.metadata?.target_column || "Not provided"}</p>
                     <p><strong>Deployment Context:</strong> {result.metadata?.deployment_context || "Not provided"}</p>
                     <p><strong>Domain:</strong> {result.metadata?.domain || "Not provided"}</p>
                     <p><strong>Preprocessing Steps:</strong> {result.metadata?.preprocessing_steps || "Not provided"}</p>

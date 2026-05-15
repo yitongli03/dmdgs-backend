@@ -26,8 +26,8 @@ function BiasPage({ result, onContinue, onBack }) {
                 <div className="method-grid">
                     <MethodExplanation
                         title="Imbalance Ratio"
-                        computes="The ratio between the largest and smallest target classes for classification datasets."
-                        how="The target column is shown separately as class distribution. For other features, the tool shows category frequencies for categorical values and min, mean, max, and sampled value patterns for numeric values. Identifier and date-like columns are skipped."
+                        computes="The ratio between the largest and smallest target class frequencies for classification datasets."
+                        how="For the selected target column, the tool counts how often each class appears. It then divides the largest class count by the smallest class count and compares the result with the threshold of 2.0."
                         why="Class imbalance can cause some outcomes to be underrepresented, which may affect model behaviour later."
                     />
                     <MethodExplanation

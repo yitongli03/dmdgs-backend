@@ -18,16 +18,12 @@ function DatasetInfoPage({ result, onContinue, onBack }) {
                     <StatusBadge status="neutral" label={result.metadata?.task_type || "unknown task"} />
                 </div>
 
+                <p><strong>Filename:</strong> {result.file_info?.filename || "Not available"}</p>
                 <div className="metric-grid">
                     <MetricTile label="Rows" value={result.schema_info?.num_rows ?? 0} />
                     <MetricTile label="Columns" value={result.schema_info?.num_columns ?? 0} />
                     <MetricTile label="File type" value={result.file_info?.content_type || "Not available"} />
                 </div>
-            </div>
-
-            <div className="card">
-                <h3>File Information</h3>
-                <p><strong>Filename:</strong> {result.file_info?.filename || "Not available"}</p>
             </div>
 
             <div className="card">

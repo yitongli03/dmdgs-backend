@@ -1,6 +1,6 @@
-import os
 import uuid
 from datetime import datetime, UTC
+from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pymongo.collection import Collection
@@ -32,7 +32,8 @@ from communication.models.dataset_model import (
 
 router = APIRouter()
 
-UPLOAD_FOLDER = "uploads"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+UPLOAD_FOLDER = PROJECT_ROOT / "uploads"
 
 @router.post("/datasets/upload")
 async def upload_dataset(
@@ -53,11 +54,11 @@ async def upload_dataset(
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
 
     # Ensure upload folder exists
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
     # Create unique filename to avoid overwriting files with the same name
     stored_filename = f"{uuid.uuid4()}_{file.filename}"
-    file_path = os.path.join(UPLOAD_FOLDER, stored_filename)
+    file_path = UPLOAD_FOLDER / stored_filename
 
     # Save file locally
     with open(file_path, "wb") as f:
@@ -65,7 +66,7 @@ async def upload_dataset(
         f.write(content)
 
     # Parse dataset
-    df = parse_csv(file_path)
+    df = parse_csv(str(file_path))
 
     # Extract schema info
     schema_info = extract_schema_info(df)
@@ -141,7 +142,7 @@ async def upload_dataset(
         file_info=FileInfo(
             filename=file.filename,
             content_type=file.content_type,
-            stored_path=file_path,
+            stored_path=str(file_path),
         ),
         metadata=MetadataModel(**metadata_dict),
         schema_info=SchemaInfo(**schema_info),

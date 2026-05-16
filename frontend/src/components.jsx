@@ -30,7 +30,7 @@ export function StatusBadge({ status = "neutral", label }) {
 
 export function WarningList({ warnings = [] }) {
     if (!warnings.length) {
-        return <StatusBadge status="ok" label="No issues detected" />;
+        return <StatusBadge status="ok" label="No warnings" />;
     }
 
     return (
@@ -66,7 +66,7 @@ export function AssessmentHeader({ title, eyebrow = "Evaluation perspective", ch
             </div>
             <StatusBadge
                 status={hasWarnings ? "warning" : "ok"}
-                label={hasWarnings ? `${warnings.length} review item${warnings.length === 1 ? "" : "s"}` : "Clear"}
+                label={hasWarnings ? `${warnings.length} warning${warnings.length === 1 ? "" : "s"}` : "OK"}
             />
         </div>
     );

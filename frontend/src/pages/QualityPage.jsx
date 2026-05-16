@@ -34,7 +34,7 @@ function QualityPage({ result, onContinue, onBack }) {
                         title="Duplicate Rate"
                         computes="The proportion of records that are exact duplicates."
                         how="The tool counts duplicated rows and divides them by the total number of rows. Values above 0.2 are flagged for review."
-                        why="Duplicates can indicate collection or processing issues and may distort later training or evaluation results."
+                        why="Duplicates can indicate collection or processing problems and may distort later training or evaluation results."
                     />
                 </div>
 
@@ -62,7 +62,7 @@ function QualityPage({ result, onContinue, onBack }) {
                 </p>
                 {renderBooleanMap(result.data_quality_analysis?.metadata_completeness)}
 
-                <h4>Review Items</h4>
+                <h4>Warnings</h4>
                 {renderWarnings(warnings)}
             </div>
 

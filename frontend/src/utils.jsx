@@ -7,18 +7,18 @@ export const formatNumber = (value) => {
 
 export const renderWarnings = (warnings) => {
     if (!warnings || warnings.length === 0) {
-        return <StatusBadge status="ok" label="No issues detected" />;
+        return <StatusBadge status="ok" label="No warnings" />;
     }
     return (
         <WarningList warnings={warnings} />
     );
 };
 
-export const renderFlagStatus = (issues) => {
-    if (!issues || issues.length === 0) {
+export const renderFlagStatus = (warnings) => {
+    if (!warnings || warnings.length === 0) {
         return <StatusBadge status="ok" label="OK" />;
     }
-    return <StatusBadge status="warning" label={`${issues.length} issue${issues.length === 1 ? "" : "s"}`} />;
+    return <StatusBadge status="warning" label={`${warnings.length} warning${warnings.length === 1 ? "" : "s"}`} />;
 };
 
 export const renderBooleanMap = (obj) => {
@@ -37,9 +37,9 @@ export const renderBooleanMap = (obj) => {
     );
 };
 
-export function getIssueCount(result) {
+export function getWarningCount(result) {
     const flags = result?.governance_flags || {};
-    return Object.values(flags).reduce((total, issues) => total + (issues?.length || 0), 0);
+    return Object.values(flags).reduce((total, warnings) => total + (warnings?.length || 0), 0);
 }
 
 export const convertDatasetDocumentToResult = (datasetDocument) => {

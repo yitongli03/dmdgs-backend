@@ -1,18 +1,18 @@
 import { MetricTile, StatusBadge } from "../components";
-import { formatNumber, renderWarnings, renderFlagStatus, renderBooleanMap, getIssueCount } from "../utils";
+import { formatNumber, renderWarnings, renderFlagStatus, renderBooleanMap, getWarningCount } from "../utils";
 import { CategoricalChart, FeatureDistributions } from "../Charts";
 
-function ReviewItems({ warnings }) {
+function WarningSection({ warnings }) {
     return (
         <>
-            <h4>Review Items</h4>
+            <h4>Warnings</h4>
             {renderWarnings(warnings || [])}
         </>
     );
 }
 
 function SummaryPage({ result, onBack, goHome }) {
-    const issueCount = getIssueCount(result);
+    const warningCount = getWarningCount(result);
 
     return (
         <div>
@@ -23,12 +23,12 @@ function SummaryPage({ result, onBack, goHome }) {
                 <div className="summary-top">
                     <div>
                         <p className="eyebrow">Assessment Summary</p>
-                        <h3>{issueCount === 0 ? "No Review Items Detected" : `${issueCount} Review Item${issueCount === 1 ? "" : "s"} Detected`}</h3>
+                        <h3>{warningCount === 0 ? "No Warnings" : `${warningCount} Warning${warningCount === 1 ? "" : "s"}`}</h3>
                         <p className="section-copy">
                             This report is a decision-support artefact. It highlights where a human reviewer should inspect documentation, context, data distribution, or privacy safeguards.
                         </p>
                     </div>
-                    <StatusBadge status={issueCount ? "warning" : "ok"} label={issueCount ? "Needs review" : "Clear"} />
+                    <StatusBadge status={warningCount ? "warning" : "ok"} label={warningCount ? "Needs review" : "OK"} />
                 </div>
 
                 <div className="flag-grid">
@@ -69,12 +69,12 @@ function SummaryPage({ result, onBack, goHome }) {
                 </div>
                 <h4>Metadata Completeness</h4>
                 {renderBooleanMap(result.data_quality_analysis?.metadata_completeness)}
-                <ReviewItems warnings={result.data_quality_analysis?.warnings} />
+                <WarningSection warnings={result.data_quality_analysis?.warnings} />
             </div>
 
             <div className="card">
                 <h3>Suitability</h3>
-                <ReviewItems warnings={result.suitability_analysis?.warnings} />
+                <WarningSection warnings={result.suitability_analysis?.warnings} />
             </div>
 
             <div className="card">
@@ -94,7 +94,7 @@ function SummaryPage({ result, onBack, goHome }) {
                 }
                 <h4>Feature Distribution Summary</h4>
                 <FeatureDistributions obj={result.bias_analysis?.feature_distribution_summary} />
-                <ReviewItems warnings={result.bias_analysis?.warnings} />
+                <WarningSection warnings={result.bias_analysis?.warnings} />
             </div>
 
             <div className="card">
@@ -109,7 +109,7 @@ function SummaryPage({ result, onBack, goHome }) {
                         ? result.privacy_analysis.detected_personal_columns.join(", ")
                         : "None"}
                 </p>
-                <ReviewItems warnings={result.privacy_analysis?.warnings} />
+                <WarningSection warnings={result.privacy_analysis?.warnings} />
             </div>
 
             <div className="nav-actions">

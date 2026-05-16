@@ -21,7 +21,7 @@ function BiasPage({ result, onContinue, onBack }) {
 
                 <h4>Evaluation Methods</h4>
                 <p className="section-copy">
-                    Expand a method to see what the signal means and why it is treated as an early review item.
+                    Expand a method to see what the signal means and why it may produce an early warning.
                 </p>
                 <div className="method-grid">
                     <MethodExplanation
@@ -68,7 +68,7 @@ function BiasPage({ result, onContinue, onBack }) {
                 </p>
                 <FeatureDistributions obj={result.bias_analysis?.feature_distribution_summary} />
 
-                <h4>Review Items</h4>
+                <h4>Warnings</h4>
                 {renderWarnings(warnings)}
             </div>
 

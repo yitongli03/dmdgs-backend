@@ -26,7 +26,7 @@ function CheckGroup({ title, description, warnings }) {
         <div className="check-group">
             <p><strong>{title}</strong></p>
             {matched.length === 0 ? (
-                <StatusBadge status="ok" label="No issues detected" />
+                <StatusBadge status="ok" label="No warnings" />
             ) : (
                 <ul className="warning-list">
                     {matched.map((w, i) => (
@@ -62,7 +62,7 @@ function SuitabilityPage({ result, onContinue, onBack }) {
                     <MethodExplanation
                         title="Contextual Metadata Completeness"
                         computes="Whether intended use and deployment context have been provided."
-                        how="The tool checks whether these fields are empty and creates review items when context is missing."
+                        how="The tool checks whether these fields are empty and creates warnings when context is missing."
                         why="Suitability cannot be assessed from the data alone. The same dataset may be acceptable in one context and inappropriate in another."
                     />
                     <MethodExplanation

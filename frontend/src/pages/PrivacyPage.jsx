@@ -26,7 +26,7 @@ function PrivacyPage({ result, onContinue, onBack }) {
                     <MethodExplanation
                         title="User Declaration Check"
                         computes="Whether the user has indicated that the dataset contains personal data and whether privacy notes are provided."
-                        how="If personal data is declared without explanatory notes, the tool creates a review item."
+                        how="If personal data is declared without explanatory notes, the tool creates a warning."
                         why="Privacy assessment depends on documentation and context. User input makes the risk review more transparent."
                     />
                     <MethodExplanation
@@ -60,7 +60,7 @@ function PrivacyPage({ result, onContinue, onBack }) {
                     </>
                 )}
 
-                <h4>Review Items</h4>
+                <h4>Warnings</h4>
                 {renderWarnings(warnings)}
             </div>
 

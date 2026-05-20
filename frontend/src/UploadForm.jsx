@@ -127,7 +127,7 @@ function UploadForm({ onResult }) {
 
                 <div className="form-section-intro form-section-intro-first">
                     <h3 className="form-section-heading">Required Information</h3>
-                    <p className="section-copy">These fields provide the minimum contextual information required for governance evaluation.</p>
+                    <p className="section-copy">These fields provide the minimum contextual information required for the governance review.</p>
                 </div>
 
                 <div className="form-grid">

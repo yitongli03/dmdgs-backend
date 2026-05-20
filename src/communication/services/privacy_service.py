@@ -12,7 +12,7 @@ def detect_potential_personal_data(df: pd.DataFrame) -> list[str]:
         "name", "firstname", "lastname", "fullname", "email", "mail",
         "phone", "mobile", "address", "street", "city", "zip", "postal",
         "postcode", "ssn", "passport", "birth", "dob", "patient",
-        "person", "customer", "user", "client", "employee", "resource",
+        "person",
     }
     identifier_subject_tokens = {
         "patient", "person", "customer", "user", "client", "employee",
@@ -26,7 +26,7 @@ def detect_potential_personal_data(df: pd.DataFrame) -> list[str]:
         tokens = _column_tokens(col_name)
 
         has_personal_token = bool(tokens & personal_tokens)
-        has_person_related_id = "id" in tokens and bool(tokens & identifier_subject_tokens)
+        has_person_related_id = bool(tokens & {"id", "number", "nbr"}) and bool(tokens & identifier_subject_tokens)
 
         if has_personal_token or has_person_related_id:
             detected_columns.append(str(col))

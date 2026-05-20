@@ -44,12 +44,18 @@ export function getWarningCount(result) {
 
 export const convertDatasetDocumentToResult = (datasetDocument) => {
     const emptyFlags = {
-        quality_issues: [],
-        suitability_issues: [],
-        bias_issues: [],
-        privacy_issues: [],
+        quality_warnings: [],
+        suitability_warnings: [],
+        bias_warnings: [],
+        privacy_warnings: [],
     };
     const flags = datasetDocument.governance_flags || emptyFlags;
+    const normalizedFlags = {
+        quality_warnings: flags.quality_warnings || flags.quality_issues || [],
+        suitability_warnings: flags.suitability_warnings || flags.suitability_issues || [],
+        bias_warnings: flags.bias_warnings || flags.bias_issues || [],
+        privacy_warnings: flags.privacy_warnings || flags.privacy_issues || [],
+    };
 
     return {
         dataset_id: datasetDocument.dataset_id || "Unknown",
@@ -67,10 +73,11 @@ export const convertDatasetDocumentToResult = (datasetDocument) => {
                 datasetDocument.analysis?.data_quality?.duplicate_rate ?? null,
             metadata_completeness:
                 datasetDocument.analysis?.data_quality?.metadata_completeness || {},
-            warnings: flags.quality_issues || [],
+            warnings:
+                datasetDocument.analysis?.data_quality?.warnings || normalizedFlags.quality_warnings,
         },
         suitability_analysis: {
-            warnings: flags.suitability_issues || [],
+            warnings: normalizedFlags.suitability_warnings,
         },
         bias_analysis: {
             class_distribution:
@@ -79,20 +86,15 @@ export const convertDatasetDocumentToResult = (datasetDocument) => {
                 datasetDocument.analysis?.bias?.imbalance_ratio ?? null,
             feature_distribution_summary:
                 datasetDocument.analysis?.bias?.feature_distribution_summary || {},
-            warnings: flags.bias_issues || [],
+            warnings: normalizedFlags.bias_warnings,
         },
         privacy_analysis: {
             user_indicated_personal_data:
                 datasetDocument.analysis?.privacy?.user_indicated_personal_data ?? false,
             detected_personal_columns:
                 datasetDocument.analysis?.privacy?.detected_personal_columns || [],
-            warnings: flags.privacy_issues || [],
+            warnings: normalizedFlags.privacy_warnings,
         },
-        governance_flags: {
-            quality_issues: flags.quality_issues || [],
-            suitability_issues: flags.suitability_issues || [],
-            bias_issues: flags.bias_issues || [],
-            privacy_issues: flags.privacy_issues || [],
-        },
+        governance_flags: normalizedFlags,
     };
 };

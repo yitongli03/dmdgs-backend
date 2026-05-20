@@ -32,10 +32,10 @@ function SummaryPage({ result, onBack, goHome }) {
                 </div>
 
                 <div className="flag-grid">
-                    <p><strong>Quality:</strong> {renderFlagStatus(result.governance_flags?.quality_issues || [])}</p>
-                    <p><strong>Suitability:</strong> {renderFlagStatus(result.governance_flags?.suitability_issues || [])}</p>
-                    <p><strong>Bias:</strong> {renderFlagStatus(result.governance_flags?.bias_issues || [])}</p>
-                    <p><strong>Privacy:</strong> {renderFlagStatus(result.governance_flags?.privacy_issues || [])}</p>
+                    <p><strong>Quality:</strong> {renderFlagStatus(result.governance_flags?.quality_warnings || [])}</p>
+                    <p><strong>Suitability:</strong> {renderFlagStatus(result.governance_flags?.suitability_warnings || [])}</p>
+                    <p><strong>Bias:</strong> {renderFlagStatus(result.governance_flags?.bias_warnings || [])}</p>
+                    <p><strong>Privacy:</strong> {renderFlagStatus(result.governance_flags?.privacy_warnings || [])}</p>
                 </div>
             </div>
 

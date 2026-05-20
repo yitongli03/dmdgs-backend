@@ -33,6 +33,7 @@ class DataQualityResult(BaseModel):
     duplicate_rate: Optional[float] = None
     metadata_completeness: Dict[str, bool] = Field(default_factory=dict)
     consistency_notes: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
 
 
 class SuitabilityResult(BaseModel):
@@ -60,15 +61,10 @@ class AnalysisResult(BaseModel):
 
 
 class GovernanceFlags(BaseModel):
-    quality_issues: List[str] = Field(default_factory=list)
-    suitability_issues: List[str] = Field(default_factory=list)
-    bias_issues: List[str] = Field(default_factory=list)
-    privacy_issues: List[str] = Field(default_factory=list)
-
-
-class ReportModel(BaseModel):
-    summary: Optional[str] = ""
-    generated_at: Optional[datetime] = None
+    quality_warnings: List[str] = Field(default_factory=list)
+    suitability_warnings: List[str] = Field(default_factory=list)
+    bias_warnings: List[str] = Field(default_factory=list)
+    privacy_warnings: List[str] = Field(default_factory=list)
 
 
 class DatasetDocument(BaseModel):
@@ -80,4 +76,3 @@ class DatasetDocument(BaseModel):
     schema_info: SchemaInfo = Field(default_factory=SchemaInfo)
     analysis: AnalysisResult = Field(default_factory=AnalysisResult)
     governance_flags: GovernanceFlags = Field(default_factory=GovernanceFlags)
-    report: ReportModel = Field(default_factory=ReportModel)

@@ -152,24 +152,25 @@ async def upload_dataset(
     dataset_document.analysis.data_quality.missing_value_ratio = mvr
     dataset_document.analysis.data_quality.duplicate_rate = dr
     dataset_document.analysis.data_quality.metadata_completeness = metadata_completeness
-    dataset_document.governance_flags.quality_issues = quality_warnings
+    dataset_document.analysis.data_quality.warnings = quality_warnings
+    dataset_document.governance_flags.quality_warnings = quality_warnings
 
     # Inject suitability results
     dataset_document.analysis.suitability.warnings = suitability_warnings
-    dataset_document.governance_flags.suitability_issues = suitability_warnings
+    dataset_document.governance_flags.suitability_warnings = suitability_warnings
 
     # Inject bias analysis results
     dataset_document.analysis.bias.class_distribution = class_distribution
     dataset_document.analysis.bias.imbalance_ratio = imbalance_ratio
     dataset_document.analysis.bias.feature_distribution_summary = feature_distribution_summary
     dataset_document.analysis.bias.warnings = bias_warnings
-    dataset_document.governance_flags.bias_issues = bias_warnings
+    dataset_document.governance_flags.bias_warnings = bias_warnings
 
     # Inject privacy analysis results
     dataset_document.analysis.privacy.user_indicated_personal_data = contains_personal_data
     dataset_document.analysis.privacy.detected_personal_columns = detected_columns
     dataset_document.analysis.privacy.warnings = privacy_warnings
-    dataset_document.governance_flags.privacy_issues = privacy_warnings
+    dataset_document.governance_flags.privacy_warnings = privacy_warnings
 
     # Store in MongoDB
     db = get_database()

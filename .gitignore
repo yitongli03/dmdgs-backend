@@ -5,6 +5,9 @@
 
 # Uploaded datasets and generated local files
 uploads/
+src/uploads/
+archived_uploads/
+demo_datasets/
 
 # Python
 __pycache__/

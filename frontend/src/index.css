@@ -510,6 +510,18 @@ button:disabled {
   margin-top: 28px;
 }
 
+.form-section-intro {
+  margin: 28px 0 14px;
+}
+
+.form-section-intro-first {
+  margin-top: 0;
+}
+
+.form-section-intro .form-section-heading {
+  margin: 0;
+}
+
 .form-field {
   display: grid;
   gap: 6px;

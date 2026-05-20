@@ -33,7 +33,7 @@ function BiasPage({ result, onContinue, onBack }) {
                     <MethodExplanation
                         title="Class and Feature Distributions"
                         computes="The relative frequency of target classes and summaries of selected dataset features."
-                        how="The tool shows category frequencies for target and categorical features, and shows min, mean, max and sampled value patterns for numeric features. Identifier and date-like columns are skipped."
+                        how="The tool shows category frequencies for the target and selected categorical features, and shows min, mean, max and sampled value patterns for selected numeric features. Identifier and date-like columns are skipped."
                         why="Distribution views help users notice dominant categories, skewed values, or sampling patterns that require contextual judgement."
                     />
                 </div>

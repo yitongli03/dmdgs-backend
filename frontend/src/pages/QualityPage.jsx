@@ -36,6 +36,12 @@ function QualityPage({ result, onContinue, onBack }) {
                         how="The tool counts duplicated rows and divides them by the total number of rows. Values above 0.2 are flagged for review."
                         why="Duplicates can indicate collection or processing problems and may distort later training or evaluation results."
                     />
+                    <MethodExplanation
+                        title="Metadata Completeness"
+                        computes="Whether key descriptive metadata fields have been provided."
+                        how="The tool checks dataset name, origin, intended use, task type, deployment context, and domain. Missing fields are flagged for review."
+                        why="Complete metadata supports traceability and helps users interpret later suitability, bias, and privacy results in context."
+                    />
                 </div>
 
                 <h4>Computed Results</h4>

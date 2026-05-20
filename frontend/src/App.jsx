@@ -78,12 +78,7 @@ function App() {
             <StepIndicator currentPage={currentPage} />
 
             {currentPage === "home" && (
-                <>
-                    <p className="section-copy">
-                        Upload a CSV and describe its intended use. The tool applies the derived evaluation methods and produces a transparent governance report for human review.
-                    </p>
-                    <UploadForm onResult={handleResult} />
-                </>
+                <UploadForm onResult={handleResult} />
             )}
             {currentPage === "info" && (
                 <DatasetInfoPage {...pageProps} onContinue={() => goTo("quality")} onBack={goHome} />

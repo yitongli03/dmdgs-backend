@@ -111,7 +111,7 @@ function UploadForm({ onResult }) {
                         <p className="eyebrow">New Assessment</p>
                         <h3>Upload Dataset</h3>
                         <p className="section-copy">
-                            Required fields define the purpose of the dataset. Optional fields improve suitability and privacy review.
+                            The uploaded file and metadata are used throughout the governance review.
                         </p>
                     </div>
                 </div>
@@ -125,7 +125,10 @@ function UploadForm({ onResult }) {
                     />
                 </div>
 
-                <h3>Required Information</h3>
+                <div className="form-section-intro form-section-intro-first">
+                    <h3 className="form-section-heading">Required Information</h3>
+                    <p className="section-copy">These fields provide the minimum contextual information required for governance evaluation.</p>
+                </div>
 
                 <div className="form-grid">
                     <label className="form-field">
@@ -152,30 +155,40 @@ function UploadForm({ onResult }) {
                             <option value="regression">Regression</option>
                             <option value="clustering">Clustering</option>
                         </select>
+                        <span className="field-help">Select the intended analysis or modelling task.</span>
                     </label>
                 </div>
 
-                <h3 className="form-section-heading">Optional Information</h3>
+                <div className="form-section-intro">
+                    <h3 className="form-section-heading">Governance Context</h3>
+                    <p className="section-copy">
+                        These fields are optional for upload, but they improve the governance review and may affect warnings.
+                    </p>
+                </div>
 
                 <div className="form-grid">
                     <label className="form-field">
                         <span className="field-label">Target column name</span>
                         <input name="target_column" value={form.target_column} onChange={handleChange} />
+                        <span className="field-help">Required for classification or regression tasks.</span>
                     </label>
 
                     <label className="form-field">
                         <span className="field-label">Deployment context</span>
                         <input name="deployment_context" value={form.deployment_context} onChange={handleChange} />
+                        <span className="field-help">Describe where or how the dataset may be used.</span>
                     </label>
 
                     <label className="form-field">
                         <span className="field-label">Domain</span>
                         <input name="domain" value={form.domain} onChange={handleChange} />
+                        <span className="field-help">Example: healthcare, finance, census data, or IT service management.</span>
                     </label>
 
                     <label className="form-field">
                         <span className="field-label">Preprocessing steps</span>
                         <input name="preprocessing_steps" value={form.preprocessing_steps} onChange={handleChange} />
+                        <span className="field-help">Note cleaning, header changes, filtering, or transformations already applied.</span>
                     </label>
 
                     <label className="form-field full-width">
@@ -187,7 +200,7 @@ function UploadForm({ onResult }) {
                                 onChange={handleChange}
                                 style={{ marginRight: "8px" }}
                             />
-                            Dataset contains personal data
+                            Dataset may contain personal or sensitive data
                         </span>
                     </label>
 
@@ -199,20 +212,24 @@ function UploadForm({ onResult }) {
                             onChange={handleChange}
                             rows="3"
                         />
+                        <span className="field-help">Explain personal, sensitive, pseudonymized, or de-identified attributes if relevant.</span>
                     </label>
                 </div>
 
                 <button type="submit" disabled={!isFormValid || isSubmitting} style={{ marginTop: "18px" }}>
-                    {isSubmitting ? "Analysing..." : "Upload & Analyse Dataset"}
+                    {isSubmitting ? "Evaluating..." : "Upload & Start Governance Review"}
                 </button>
             </form>
 
             <div className="card">
                 <h3>Stored Datasets</h3>
-
+                <p className="section-copy">
+                    Previously processed datasets can be retrieved for later governance review.
+                </p>
+            
                 <div className="search-row">
                     <input
-                        placeholder="Search dataset by ID"
+                        placeholder="Search stored dataset by ID"
                         value={searchId}
                         onChange={(e) => setSearchId(e.target.value)}
                     />

@@ -74,7 +74,7 @@ function SuitabilityPage({ result, onContinue, onBack }) {
                     <MethodExplanation
                         title="Task-Type Plausibility"
                         computes="Basic consistency between the declared task type and the target column."
-                        how="For classification, many unique target values are flagged. For regression, a non-numeric target is flagged."
+                        how="For classification, target columns with more than 20 unique values are flagged. For regression, a non-numeric target is flagged."
                         why="These checks catch common mismatches between dataset structure and intended modelling task before deeper analysis."
                     />
                 </div>

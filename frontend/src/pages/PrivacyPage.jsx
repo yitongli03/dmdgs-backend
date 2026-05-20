@@ -31,8 +31,8 @@ function PrivacyPage({ result, onContinue, onBack }) {
                     />
                     <MethodExplanation
                         title="Potential Personal Column Detection"
-                        computes="Column names that may indicate personal data, such as names, email addresses, person-related identifiers, or contact details."
-                        how="The tool splits column names into normalized tokens, compares them with predefined privacy-related keywords, and lists matching columns."
+                        computes="Column names that may indicate personal data, such as names, contact fields, patient-related fields, or person-related identifiers."
+                        how="The tool splits column names into normalized tokens and compares them with predefined privacy-related keywords. Generic business-process terms such as customer or resource are only flagged when combined with identifier terms such as id, number, or nbr."
                         why="This heuristic can catch obvious privacy signals early, while still requiring human confirmation."
                     />
                 </div>
@@ -49,7 +49,7 @@ function PrivacyPage({ result, onContinue, onBack }) {
                         label="Detected personal columns"
                         value={detectedColumns.length ? detectedColumns.length : "None"}
                         status={detectedColumns.length ? "warning" : "neutral"}
-                        helper="Token-based column-name detection for names, email addresses, person-related identifiers, contact details, and similar personal-data signals."
+                        helper="Token-based column-name detection for names, contact fields, patient-related fields, and person-related identifiers such as patient_nbr or customer_id."
                     />
                 </div>
 

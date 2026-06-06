@@ -80,7 +80,7 @@ function UploadForm({ onResult }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!file) {
-            alert("Please choose a CSV file first.");
+            alert("Please choose a CSV or XES file first.");
             return;
         }
 
@@ -111,16 +111,16 @@ function UploadForm({ onResult }) {
                         <p className="eyebrow">New Assessment</p>
                         <h3>Upload Dataset</h3>
                         <p className="section-copy">
-                            The uploaded file and metadata are used throughout the governance review.
+                            The uploaded file and metadata are used throughout the governance review. XES event logs are converted into a tabular representation before evaluation.
                         </p>
                     </div>
                 </div>
 
                 <div className="form-field full-width" style={{ marginBottom: "16px" }}>
-                    <label className="field-label">CSV file *</label>
+                    <label className="field-label">CSV or XES file *</label>
                     <input
                         type="file"
-                        accept=".csv"
+                        accept=".csv,.xes"
                         onChange={(e) => setFile(e.target.files[0])}
                     />
                 </div>

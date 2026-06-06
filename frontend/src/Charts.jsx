@@ -11,13 +11,23 @@ const COLORS = [
     "#475569", "#ca8a04",
 ];
 
-export function CategoricalChart({ featureName, featureData }) {
+function truncateLabel(value, maxLength = 28) {
+    const label = String(value);
+
+    if (label.length <= maxLength) {
+        return label;
+    }
+
+    return `${label.slice(0, maxLength - 1)}...`;
+}
+
+export function CategoricalChart({ featureName, featureData, showTitle = true }) {
     const values = featureData?.values || {};
 
     if (Object.keys(values).length === 0) {
         return (
             <div style={{ marginBottom: "30px" }}>
-                <h5>{featureName}</h5>
+                {showTitle && <h5>{featureName}</h5>}
                 <p>Not available</p>
             </div>
         );
@@ -30,7 +40,7 @@ export function CategoricalChart({ featureName, featureData }) {
 
     return (
         <div style={{ marginBottom: "30px" }}>
-            <h5>{featureName}</h5>
+            {showTitle && <h5>{featureName}</h5>}
             <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -39,8 +49,9 @@ export function CategoricalChart({ featureName, featureData }) {
                         interval={0}
                         angle={-20}
                         textAnchor="end"
-                        height={74}
-                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        height={82}
+                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        tickFormatter={(value) => truncateLabel(value)}
                     />
                     <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
                     <Tooltip />
@@ -88,7 +99,7 @@ export function NumericChart({ featureName, featureData }) {
     );
 }
 
-export function FeatureDistributions({ obj }) {
+export function FeatureDistributions({ obj, showIntro = true }) {
     if (!obj || Object.keys(obj).length === 0) {
         return <p>Not available</p>;
     }
@@ -119,7 +130,11 @@ export function FeatureDistributions({ obj }) {
 
     return (
         <div>
-            <p className="section-copy" style={{ marginBottom: "12px" }}>Expand a feature to inspect its distribution.</p>
+            {showIntro && (
+                <p className="section-copy" style={{ marginBottom: "12px" }}>
+                    Expand a feature to inspect its distribution.
+                </p>
+            )}
             {Object.entries(obj).map(([featureName, featureData]) => (
                 <details
                     key={featureName}

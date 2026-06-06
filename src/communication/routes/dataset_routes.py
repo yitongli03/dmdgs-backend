@@ -6,7 +6,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pymongo.collection import Collection
 
 from communication.database_connector.db_connector import get_database
-from communication.services.parser_service import parse_csv, extract_schema_info
+from communication.services.parser_service import parse_dataset, extract_schema_info
 from communication.services.quality_service import (
     compute_missing_value_ratio,
     compute_duplicate_rate,
@@ -17,6 +17,8 @@ from communication.services.bias_service import (
     compute_class_distribution,
     compute_imbalance_ratio,
     compute_feature_distribution_summary,
+    compute_event_log_distribution_summary,
+    generate_event_log_bias_warnings,
     generate_bias_warnings,
 )
 from communication.services.privacy_service import (
@@ -50,8 +52,9 @@ async def upload_dataset(
     privacy_notes: str = Form(""),
 ):
     # Validate file type
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are supported")
+    supported_extensions = (".csv", ".xes")
+    if not file.filename.lower().endswith(supported_extensions):
+        raise HTTPException(status_code=400, detail="Only CSV and XES files are supported")
 
     # Ensure upload folder exists
     UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -66,7 +69,10 @@ async def upload_dataset(
         f.write(content)
 
     # Parse dataset
-    df = parse_csv(str(file_path))
+    try:
+        df = parse_dataset(str(file_path))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # Extract schema info
     schema_info = extract_schema_info(df)
@@ -109,19 +115,27 @@ async def upload_dataset(
         target_column=target_column,
         intended_use=intended_use,
         deployment_context=deployment_context,
+        domain=domain,
+        preprocessing_steps=preprocessing_steps,
     )
 
     # Bias analysis
     class_distribution = {}
     imbalance_ratio = None
     feature_distribution_summary = compute_feature_distribution_summary(df, target_column)
+    feature_distribution_summary.update(compute_event_log_distribution_summary(df))
 
     if task_type == "classification" and target_column is not None:
         if target_column in df.columns:
             class_distribution = compute_class_distribution(df, target_column)
             imbalance_ratio = compute_imbalance_ratio(df, target_column)
 
-    bias_warnings = generate_bias_warnings(task_type, imbalance_ratio)
+    event_log_bias_warnings = generate_event_log_bias_warnings(df)
+    bias_warnings = generate_bias_warnings(
+        task_type,
+        imbalance_ratio,
+        event_log_warnings=event_log_bias_warnings,
+    )
 
     # Privacy analysis
     detected_columns = detect_potential_personal_data(df)

@@ -1,6 +1,6 @@
 # DMDGS Dataset Governance Tool
 
-DMDGS is a thesis prototype for supporting dataset governance under EU AI Act Article 10. It provides a guided workflow for uploading CSV datasets, entering contextual metadata, and reviewing dataset-level signals across four evaluation perspectives:
+DMDGS is a thesis prototype for supporting dataset governance under EU AI Act Article 10. It provides a guided workflow for uploading CSV datasets or XES event logs, entering contextual metadata, and reviewing dataset-level signals across four evaluation perspectives:
 
 - Data quality
 - Suitability and contextual alignment
@@ -30,7 +30,7 @@ The backend is implemented with FastAPI. The main dataset endpoints are:
 - `GET /datasets`
 - `GET /datasets/{dataset_id}`
 
-Uploaded CSV files are stored locally in `uploads/`, while structured dataset documents and governance outputs are stored in MongoDB.
+Uploaded CSV/XES files are stored locally in `uploads/`, while structured dataset documents and governance outputs are stored in MongoDB. XES event logs are converted into a tabular representation before the existing governance checks are applied.
 
 ### Backend Environment
 
@@ -76,7 +76,7 @@ http://127.0.0.1:5173/
 
 ## Prototype Scope
 
-This prototype currently supports CSV datasets with header rows. It does not implement user authentication, dataset ownership, access control, report export, or dataset versioning. Stored datasets are kept in a shared MongoDB collection and are intended for controlled/local testing environments.
+This prototype currently supports CSV datasets with header rows and XES event logs that can be represented as tabular event data. XES import is treated as an input-conversion step; the governance evaluation itself still uses the same tabular dataset document structure. The prototype does not implement user authentication, dataset ownership, access control, or dataset versioning. Stored datasets are kept in a shared MongoDB collection and are intended for controlled/local testing environments.
 
 Privacy detection is heuristic and based on user input plus column-name patterns. Bias analysis is dataset-level only and does not compute model fairness metrics.
 

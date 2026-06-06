@@ -345,8 +345,16 @@ button:disabled {
 }
 
 .feature-detail summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   cursor: pointer;
   font-weight: 700;
+}
+
+.feature-detail-warning {
+  border-color: #f59e0b;
 }
 
 .metric-tile {
@@ -415,6 +423,16 @@ button:disabled {
   padding: 9px 12px;
   border-radius: 6px;
   font-weight: 600;
+}
+
+.related-warnings {
+  margin: 12px 0 16px;
+}
+
+.related-warnings p {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .check-list {
@@ -486,6 +504,17 @@ button:disabled {
   justify-content: space-between;
   gap: 12px;
   margin-top: 32px;
+}
+
+.report-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.report-title-row h2 {
+  margin-bottom: 8px;
 }
 
 .button-secondary {
@@ -607,6 +636,7 @@ summary {
 
   .assessment-header,
   .summary-top,
+  .report-title-row,
   .nav-actions,
   .stored-dataset-list li,
   .search-row {
@@ -620,5 +650,73 @@ summary {
 
   .metadata-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  :root {
+    color: #111827;
+    background: #fff;
+    font-size: 12px;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  #root {
+    width: 100%;
+    min-height: auto;
+    padding: 0;
+  }
+
+  .app-shell {
+    max-width: none;
+    padding: 0;
+  }
+
+  .app-header,
+  .step-indicator,
+  .nav-actions,
+  .report-title-row button,
+  .tooltip-trigger,
+  .tooltip-panel {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none;
+    border-color: #cbd5e1;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 12px 0;
+    padding: 14px;
+  }
+
+  .metric-grid,
+  .flag-grid,
+  .metadata-grid,
+  .check-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feature-detail,
+  .method-note {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .feature-detail > div,
+  .method-note > dl {
+    display: block !important;
+  }
+
+  .feature-detail summary,
+  .method-note summary {
+    cursor: default;
+  }
+
+  button {
+    box-shadow: none;
   }
 }

@@ -1,6 +1,7 @@
 import { MetricTile, StatusBadge } from "../components";
 import { formatNumber, renderWarnings, renderFlagStatus, renderBooleanMap, getWarningCount } from "../utils";
 import { CategoricalChart, FeatureDistributions } from "../Charts";
+import { EVENT_LOG_FEATURES, isTargetActivityColumn } from "../eventLogUtils";
 
 function WarningSection({ warnings }) {
     return (
@@ -11,13 +12,108 @@ function WarningSection({ warnings }) {
     );
 }
 
-function SummaryPage({ result, onBack, goHome }) {
-    const warningCount = getWarningCount(result);
+function EventLogSummarySection({ eventLogSummary }) {
+    const durationSummary = eventLogSummary["Event-log case duration summary"];
+    const processVariants = eventLogSummary["Event-log process variants"];
+    const hasEventLogSignals = Object.keys(eventLogSummary).length > 0;
+
+    if (!hasEventLogSignals) {
+        return <p>No event-log structure detected for this dataset.</p>;
+    }
 
     return (
         <div>
-            <h2>Full Governance Report</h2>
-            <p><strong>Dataset ID:</strong> {result.dataset_id}</p>
+            {durationSummary && (
+                <details className="feature-detail">
+                    <summary>Case Duration Summary</summary>
+                    <div style={{ marginTop: "15px" }}>
+                        <div className="metric-grid">
+                            <MetricTile label="Cases with duration" value={durationSummary.total_cases} />
+                            <MetricTile label="Minimum duration" value={durationSummary.min_duration} />
+                            <MetricTile label="Mean duration" value={durationSummary.mean_duration} />
+                            <MetricTile label="Median duration" value={durationSummary.median_duration} />
+                            <MetricTile label="Maximum duration" value={durationSummary.max_duration} />
+                        </div>
+                    </div>
+                </details>
+            )}
+
+            {eventLogSummary["Event-log activity distribution"] && (
+                <details className="feature-detail">
+                    <summary>Activity Distribution</summary>
+                    <div style={{ marginTop: "15px" }}>
+                        <CategoricalChart
+                            featureName="Event-log activity distribution"
+                            featureData={eventLogSummary["Event-log activity distribution"]}
+                        />
+                    </div>
+                </details>
+            )}
+
+            {eventLogSummary["Event-log top activity transitions"] && (
+                <details className="feature-detail">
+                    <summary>Top Activity Transitions</summary>
+                    <div style={{ marginTop: "15px" }}>
+                        <CategoricalChart
+                            featureName="Top activity transitions"
+                            featureData={eventLogSummary["Event-log top activity transitions"]}
+                        />
+                    </div>
+                </details>
+            )}
+
+            {processVariants && (
+                <details className="feature-detail">
+                    <summary>Process Variants</summary>
+                    <div style={{ marginTop: "15px" }}>
+                        <div className="metric-grid">
+                            {processVariants.total_cases !== undefined && (
+                                <MetricTile label="Total cases" value={processVariants.total_cases} />
+                            )}
+                            {processVariants.total_variants !== undefined && (
+                                <MetricTile label="Total variants" value={processVariants.total_variants} />
+                            )}
+                            {processVariants.rare_variant_count !== undefined && (
+                                <MetricTile label="Rare variants" value={processVariants.rare_variant_count} />
+                            )}
+                        </div>
+                        <CategoricalChart
+                            featureName="Process variants"
+                            featureData={processVariants}
+                        />
+                    </div>
+                </details>
+            )}
+        </div>
+    );
+}
+
+function SummaryPage({ result, onBack, goHome }) {
+    const warningCount = getWarningCount(result);
+    const featureDistributionSummary = result.bias_analysis?.feature_distribution_summary || {};
+    const hideDuplicateActivityDistribution = isTargetActivityColumn(result);
+    const eventLogSummary = Object.fromEntries(
+        EVENT_LOG_FEATURES
+            .filter((key) => featureDistributionSummary[key])
+            .filter((key) => !(hideDuplicateActivityDistribution && key === "Event-log activity distribution"))
+            .map((key) => [key, featureDistributionSummary[key]])
+    );
+    const regularFeatureSummary = Object.fromEntries(
+        Object.entries(featureDistributionSummary)
+            .filter(([key]) => !EVENT_LOG_FEATURES.includes(key))
+    );
+
+    return (
+        <div>
+            <div className="report-title-row">
+                <div>
+                    <h2>Full Governance Report</h2>
+                    <p><strong>Dataset ID:</strong> {result.dataset_id}</p>
+                </div>
+                <button type="button" onClick={() => window.print()}>
+                    Print / Save PDF
+                </button>
+            </div>
 
             <div className="card">
                 <div className="summary-top">
@@ -89,11 +185,14 @@ function SummaryPage({ result, onBack, goHome }) {
                     ? <CategoricalChart
                         featureName="Class Distribution"
                         featureData={{ type: "categorical", values: result.bias_analysis.class_distribution }}
+                        showTitle={false}
                     />
                     : <p>Not available</p>
                 }
                 <h4>Feature Distribution Summary</h4>
-                <FeatureDistributions obj={result.bias_analysis?.feature_distribution_summary} />
+                <FeatureDistributions obj={regularFeatureSummary} showIntro={false} />
+                <h4>Event-log Signals</h4>
+                <EventLogSummarySection eventLogSummary={eventLogSummary} />
                 <WarningSection warnings={result.bias_analysis?.warnings} />
             </div>
 

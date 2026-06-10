@@ -1,4 +1,5 @@
-import { AssessmentHeader, MethodExplanation, StatusBadge } from "../components";
+import { ArticleReference, AssessmentHeader, MethodExplanation, StatusBadge } from "../components";
+import { ARTICLE_10_REFERENCES } from "../article10References";
 import { detectEventLogColumns } from "../eventLogUtils";
 
 const CONTEXT_PATTERNS = [
@@ -104,8 +105,9 @@ function SuitabilityPage({ result, onContinue, onBack }) {
                     title="Suitability & Contextual Alignment"
                     warnings={warnings}
                 >
-                    Evaluates whether the dataset appears appropriate for its declared use context. The checks are derived from the thesis focus on contextual alignment, not from a fixed external scoring formula.
+                    Checks whether dataset structure, metadata, and task context fit together.
                 </AssessmentHeader>
+                <ArticleReference {...ARTICLE_10_REFERENCES.suitability} />
 
                 <h4>Evaluation Methods</h4>
                 <p className="section-copy">

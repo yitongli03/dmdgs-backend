@@ -3,6 +3,7 @@ export const EVENT_LOG_FEATURES = [
     "Event-log activity distribution",
     "Event-log top activity transitions",
     "Event-log process variants",
+    "Event-log drift-oriented signals",
 ];
 
 const EVENT_LOG_COLUMN_PATTERNS = {

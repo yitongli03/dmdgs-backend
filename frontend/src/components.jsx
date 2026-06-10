@@ -92,3 +92,46 @@ export function MethodExplanation({ title, computes, how, why }) {
         </details>
     );
 }
+
+export function ArticleReference({ references = [], coverage, scope }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <div className="article-reference">
+            <button
+                type="button"
+                className="button-secondary article-reference-button"
+                onClick={() => setOpen(!open)}
+                aria-expanded={open}
+            >
+                <span className="article-reference-icon">i</span>
+                Article 10 reference
+            </button>
+
+            {open && (
+                <div className="article-reference-panel">
+                    <div>
+                        <p><strong>Relevant Article 10 points</strong></p>
+                        <ul>
+                            {references.map((reference) => (
+                                <li key={reference}>{reference}</li>
+                            ))}
+                        </ul>
+                    </div>
+                    {coverage && (
+                        <div>
+                            <p><strong>How this perspective supports review</strong></p>
+                            <p>{coverage}</p>
+                        </div>
+                    )}
+                    {scope && (
+                        <div>
+                            <p><strong>Scope</strong></p>
+                            <p>{scope}</p>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}

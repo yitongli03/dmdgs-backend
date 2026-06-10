@@ -1,7 +1,94 @@
-import { MetricTile, StatusBadge } from "../components";
+import { ArticleReference, MetricTile, StatusBadge } from "../components";
 import { formatNumber, renderWarnings, renderFlagStatus, renderBooleanMap, getWarningCount } from "../utils";
 import { CategoricalChart, FeatureDistributions } from "../Charts";
-import { EVENT_LOG_FEATURES, isTargetActivityColumn } from "../eventLogUtils";
+import { EVENT_LOG_FEATURES, detectEventLogColumns, isTargetActivityColumn } from "../eventLogUtils";
+import { ARTICLE_10_REFERENCES } from "../article10References";
+
+const SUITABILITY_CONTEXT_PATTERNS = [
+    "missing intended use information",
+    "missing deployment context information",
+];
+
+const SUITABILITY_TARGET_PATTERNS = [
+    "no target column provided",
+    "not found in dataset",
+];
+
+const SUITABILITY_TASK_PATTERNS = [
+    "unique values",
+    "not numeric",
+    "unknown task type",
+];
+
+const SUITABILITY_EVENT_LOG_PATTERNS = [
+    "event-log-oriented",
+    "remaining-time-oriented",
+    "next-activity-oriented",
+];
+
+const EVENT_LOG_WARNING_PATTERNS = [
+    "activity",
+    "activities",
+    "transition",
+    "variant",
+    "event-log",
+    "process",
+    "timestamp",
+    "sequence",
+    "duration",
+    "durations",
+    "drift",
+    "window",
+    "windows",
+    "cases",
+];
+
+function includesAny(value, patterns) {
+    const normalized = String(value).toLowerCase();
+    return patterns.some((pattern) => normalized.includes(pattern));
+}
+
+function getBiasWarningGroups(warnings = []) {
+    const groups = {
+        classDistribution: [],
+        featureDistribution: [],
+        eventLogReliability: [],
+        duration: [],
+        activity: [],
+        transitions: [],
+        variants: [],
+        drift: [],
+        other: [],
+    };
+
+    warnings.forEach((warning) => {
+        const normalized = String(warning).toLowerCase();
+
+        if (includesAny(normalized, ["early", "late", "time window", "time windows", "drift"])) {
+            groups.drift.push(warning);
+        } else if (includesAny(normalized, ["transition"])) {
+            groups.transitions.push(warning);
+        } else if (includesAny(normalized, ["variant"])) {
+            groups.variants.push(warning);
+        } else if (includesAny(normalized, ["duration", "durations", "one event", "95th percentile"])) {
+            groups.duration.push(warning);
+        } else if (includesAny(normalized, ["timestamp", "sequence", "row order"])) {
+            groups.eventLogReliability.push(warning);
+        } else if (includesAny(normalized, ["activity", "activities"])) {
+            groups.activity.push(warning);
+        } else if (includesAny(normalized, ["class", "imbalance ratio", "imbalance"])) {
+            groups.classDistribution.push(warning);
+        } else if (includesAny(normalized, ["feature", "distribution", "skewed", "dominated"])) {
+            groups.featureDistribution.push(warning);
+        } else if (includesAny(normalized, EVENT_LOG_WARNING_PATTERNS)) {
+            groups.eventLogReliability.push(warning);
+        } else {
+            groups.other.push(warning);
+        }
+    });
+
+    return groups;
+}
 
 function WarningSection({ warnings }) {
     return (
@@ -12,9 +99,116 @@ function WarningSection({ warnings }) {
     );
 }
 
-function EventLogSummarySection({ eventLogSummary }) {
+function countMatchingWarnings(warnings = [], patterns = []) {
+    return warnings.filter((warning) => includesAny(warning, patterns)).length;
+}
+
+function SuitabilityStatusRow({ label, isOk, okLabel = "OK", warningLabel = "Needs review" }) {
+    return (
+        <li>
+            <strong>{label}:</strong>{" "}
+            <StatusBadge status={isOk ? "ok" : "warning"} label={isOk ? okLabel : warningLabel} />
+        </li>
+    );
+}
+
+function SuitabilitySummarySection({ result }) {
+    const warnings = result.suitability_analysis?.warnings || [];
+    const columns = result.schema_info?.columns || result.schema_info?.column_names || [];
+    const detectedEventLogColumns = detectEventLogColumns(columns);
+    const eventLogWarningCount = countMatchingWarnings(warnings, SUITABILITY_EVENT_LOG_PATTERNS);
+    const hasEventLogContext = Boolean(
+        detectedEventLogColumns.caseId
+        || detectedEventLogColumns.activity
+        || detectedEventLogColumns.timestamp
+        || eventLogWarningCount
+    );
+    const hasMinimumEventLogStructure = Boolean(
+        detectedEventLogColumns.caseId
+        && detectedEventLogColumns.activity
+        && detectedEventLogColumns.timestamp
+    );
+
+    const contextWarningCount = countMatchingWarnings(warnings, SUITABILITY_CONTEXT_PATTERNS);
+    const targetWarningCount = countMatchingWarnings(warnings, SUITABILITY_TARGET_PATTERNS);
+    const taskWarningCount = countMatchingWarnings(warnings, SUITABILITY_TASK_PATTERNS);
+
+    return (
+        <>
+            <ul className="check-list">
+                <SuitabilityStatusRow
+                    label="Context metadata"
+                    isOk={contextWarningCount === 0}
+                    warningLabel={`${contextWarningCount} warning${contextWarningCount === 1 ? "" : "s"}`}
+                />
+                <SuitabilityStatusRow
+                    label="Target validation"
+                    isOk={targetWarningCount === 0}
+                    warningLabel={`${targetWarningCount} warning${targetWarningCount === 1 ? "" : "s"}`}
+                />
+                <SuitabilityStatusRow
+                    label="Task-type plausibility"
+                    isOk={taskWarningCount === 0}
+                    warningLabel={`${taskWarningCount} warning${taskWarningCount === 1 ? "" : "s"}`}
+                />
+                {hasEventLogContext && (
+                    <SuitabilityStatusRow
+                        label="Minimum event-log structure"
+                        isOk={hasMinimumEventLogStructure && eventLogWarningCount === 0}
+                        okLabel="Complete"
+                        warningLabel={hasMinimumEventLogStructure ? `${eventLogWarningCount} warning${eventLogWarningCount === 1 ? "" : "s"}` : "Incomplete"}
+                    />
+                )}
+            </ul>
+            <WarningSection warnings={warnings} />
+        </>
+    );
+}
+
+function formatShiftScore(score) {
+    if (score === null || score === undefined) {
+        return "Not available";
+    }
+
+    return Number(score).toFixed(3);
+}
+
+function RelatedWarnings({ warnings, title = "Related warnings" }) {
+    if (!warnings?.length) {
+        return null;
+    }
+
+    return (
+        <div className="related-warnings">
+            <p><strong>{title}</strong></p>
+            {renderWarnings(warnings)}
+        </div>
+    );
+}
+
+function SummaryDetail({ title, warnings = [], children }) {
+    return (
+        <details className={`feature-detail ${warnings.length ? "feature-detail-warning" : ""}`}>
+            <summary>
+                <span>{title}</span>
+                {warnings.length > 0 && (
+                    <StatusBadge
+                        status="warning"
+                        label={`${warnings.length} warning${warnings.length === 1 ? "" : "s"}`}
+                    />
+                )}
+            </summary>
+            <div style={{ marginTop: "15px" }}>
+                {children}
+            </div>
+        </details>
+    );
+}
+
+function EventLogSummarySection({ eventLogSummary, warningGroups }) {
     const durationSummary = eventLogSummary["Event-log case duration summary"];
     const processVariants = eventLogSummary["Event-log process variants"];
+    const driftSignals = eventLogSummary["Event-log drift-oriented signals"];
     const hasEventLogSignals = Object.keys(eventLogSummary).length > 0;
 
     if (!hasEventLogSignals) {
@@ -24,9 +218,7 @@ function EventLogSummarySection({ eventLogSummary }) {
     return (
         <div>
             {durationSummary && (
-                <details className="feature-detail">
-                    <summary>Case Duration Summary</summary>
-                    <div style={{ marginTop: "15px" }}>
+                <SummaryDetail title="Case Duration Summary" warnings={warningGroups.duration}>
                         <div className="metric-grid">
                             <MetricTile label="Cases with duration" value={durationSummary.total_cases} />
                             <MetricTile label="Minimum duration" value={durationSummary.min_duration} />
@@ -34,38 +226,44 @@ function EventLogSummarySection({ eventLogSummary }) {
                             <MetricTile label="Median duration" value={durationSummary.median_duration} />
                             <MetricTile label="Maximum duration" value={durationSummary.max_duration} />
                         </div>
-                    </div>
-                </details>
+                        <RelatedWarnings warnings={warningGroups.duration} />
+                </SummaryDetail>
+            )}
+
+            {!durationSummary && (
+                <RelatedWarnings warnings={warningGroups.duration} title="Duration-related warnings" />
             )}
 
             {eventLogSummary["Event-log activity distribution"] && (
-                <details className="feature-detail">
-                    <summary>Activity Distribution</summary>
-                    <div style={{ marginTop: "15px" }}>
+                <SummaryDetail title="Activity Distribution" warnings={warningGroups.activity}>
                         <CategoricalChart
                             featureName="Event-log activity distribution"
                             featureData={eventLogSummary["Event-log activity distribution"]}
                         />
-                    </div>
-                </details>
+                        <RelatedWarnings warnings={warningGroups.activity} />
+                </SummaryDetail>
+            )}
+
+            {!eventLogSummary["Event-log activity distribution"] && (
+                <RelatedWarnings warnings={warningGroups.activity} title="Activity-related warnings" />
             )}
 
             {eventLogSummary["Event-log top activity transitions"] && (
-                <details className="feature-detail">
-                    <summary>Top Activity Transitions</summary>
-                    <div style={{ marginTop: "15px" }}>
+                <SummaryDetail title="Top Activity Transitions" warnings={warningGroups.transitions}>
                         <CategoricalChart
                             featureName="Top activity transitions"
                             featureData={eventLogSummary["Event-log top activity transitions"]}
                         />
-                    </div>
-                </details>
+                        <RelatedWarnings warnings={warningGroups.transitions} />
+                </SummaryDetail>
+            )}
+
+            {!eventLogSummary["Event-log top activity transitions"] && (
+                <RelatedWarnings warnings={warningGroups.transitions} title="Transition-related warnings" />
             )}
 
             {processVariants && (
-                <details className="feature-detail">
-                    <summary>Process Variants</summary>
-                    <div style={{ marginTop: "15px" }}>
+                <SummaryDetail title="Process Variants" warnings={warningGroups.variants}>
                         <div className="metric-grid">
                             {processVariants.total_cases !== undefined && (
                                 <MetricTile label="Total cases" value={processVariants.total_cases} />
@@ -78,11 +276,33 @@ function EventLogSummarySection({ eventLogSummary }) {
                             )}
                         </div>
                         <CategoricalChart
-                            featureName="Process variants"
+                            featureName="Top process variants"
                             featureData={processVariants}
                         />
-                    </div>
-                </details>
+                        <RelatedWarnings warnings={warningGroups.variants} />
+                </SummaryDetail>
+            )}
+
+            {!processVariants && (
+                <RelatedWarnings warnings={warningGroups.variants} title="Variant-related warnings" />
+            )}
+
+            {driftSignals && (
+                <SummaryDetail title="Drift-Oriented Signals" warnings={warningGroups.drift}>
+                        <div className="metric-grid">
+                            <MetricTile label="Early cases" value={driftSignals.early_window?.case_count ?? "Not available"} />
+                            <MetricTile label="Late cases" value={driftSignals.late_window?.case_count ?? "Not available"} />
+                            <MetricTile label="Activity shift score" value={formatShiftScore(driftSignals.activity_shift?.score)} />
+                            <MetricTile label="Variant shift score" value={formatShiftScore(driftSignals.variant_shift?.score)} />
+                            <MetricTile label="Early variants" value={driftSignals.variant_shift?.early_variant_count ?? "Not available"} />
+                            <MetricTile label="Late variants" value={driftSignals.variant_shift?.late_variant_count ?? "Not available"} />
+                        </div>
+                        <RelatedWarnings warnings={warningGroups.drift} />
+                </SummaryDetail>
+            )}
+
+            {!driftSignals && (
+                <RelatedWarnings warnings={warningGroups.drift} title="Drift-oriented warnings" />
             )}
         </div>
     );
@@ -102,6 +322,8 @@ function SummaryPage({ result, onBack, goHome }) {
         Object.entries(featureDistributionSummary)
             .filter(([key]) => !EVENT_LOG_FEATURES.includes(key))
     );
+    const classDistribution = result.bias_analysis?.class_distribution || {};
+    const biasWarningGroups = getBiasWarningGroups(result.bias_analysis?.warnings || []);
 
     return (
         <div>
@@ -121,11 +343,12 @@ function SummaryPage({ result, onBack, goHome }) {
                         <p className="eyebrow">Assessment Summary</p>
                         <h3>{warningCount === 0 ? "No Warnings" : `${warningCount} Warning${warningCount === 1 ? "" : "s"}`}</h3>
                         <p className="section-copy">
-                            This report is a decision-support artefact. It highlights where a human reviewer should inspect documentation, context, data distribution, or privacy safeguards.
+                            Consolidates metadata, indicators, visualizations, and warnings for review.
                         </p>
                     </div>
                     <StatusBadge status={warningCount ? "warning" : "ok"} label={warningCount ? "Needs review" : "OK"} />
                 </div>
+                <ArticleReference {...ARTICLE_10_REFERENCES.summary} />
 
                 <div className="flag-grid">
                     <p><strong>Quality:</strong> {renderFlagStatus(result.governance_flags?.quality_warnings || [])}</p>
@@ -170,7 +393,7 @@ function SummaryPage({ result, onBack, goHome }) {
 
             <div className="card">
                 <h3>Suitability</h3>
-                <WarningSection warnings={result.suitability_analysis?.warnings} />
+                <SuitabilitySummarySection result={result} />
             </div>
 
             <div className="card">
@@ -180,20 +403,22 @@ function SummaryPage({ result, onBack, goHome }) {
                     {result.bias_analysis?.imbalance_ratio ?? "Not applicable"}
                 </p>
                 <h4>Class Distribution</h4>
-                {result.bias_analysis?.class_distribution &&
-                    Object.keys(result.bias_analysis.class_distribution).length > 0
+                {Object.keys(classDistribution).length > 0
                     ? <CategoricalChart
                         featureName="Class Distribution"
-                        featureData={{ type: "categorical", values: result.bias_analysis.class_distribution }}
+                        featureData={{ type: "categorical", values: classDistribution }}
                         showTitle={false}
                     />
                     : <p>Not available</p>
                 }
+                <RelatedWarnings warnings={biasWarningGroups.classDistribution} />
                 <h4>Feature Distribution Summary</h4>
                 <FeatureDistributions obj={regularFeatureSummary} showIntro={false} />
+                <RelatedWarnings warnings={biasWarningGroups.featureDistribution} />
                 <h4>Event-log Signals</h4>
-                <EventLogSummarySection eventLogSummary={eventLogSummary} />
-                <WarningSection warnings={result.bias_analysis?.warnings} />
+                <RelatedWarnings warnings={biasWarningGroups.eventLogReliability} />
+                <EventLogSummarySection eventLogSummary={eventLogSummary} warningGroups={biasWarningGroups} />
+                <RelatedWarnings warnings={biasWarningGroups.other} />
             </div>
 
             <div className="card">

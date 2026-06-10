@@ -1,4 +1,5 @@
-import { MetricTile, StatusBadge } from "../components";
+import { ArticleReference, MetricTile } from "../components";
+import { ARTICLE_10_REFERENCES } from "../article10References";
 
 function DatasetInfoPage({ result, onContinue, onBack }) {
     return (
@@ -12,11 +13,11 @@ function DatasetInfoPage({ result, onContinue, onBack }) {
                         <p className="eyebrow">Input Context</p>
                         <h3>Dataset Profile</h3>
                         <p className="section-copy">
-                            This profile anchors the later governance checks. The more concrete the context, the more useful the warnings become.
+                            Provides the dataset context used throughout the governance review.
                         </p>
                     </div>
-                    <StatusBadge status="neutral" label={result.metadata?.task_type || "unknown task"} />
                 </div>
+                <ArticleReference {...ARTICLE_10_REFERENCES.datasetInfo} />
 
                 <p><strong>Filename:</strong> {result.file_info?.filename || "Not available"}</p>
                 <div className="metric-grid">

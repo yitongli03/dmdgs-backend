@@ -1,5 +1,6 @@
-import { AssessmentHeader, MethodExplanation, MetricTile } from "../components";
+import { ArticleReference, AssessmentHeader, MethodExplanation, MetricTile } from "../components";
 import { renderWarnings } from "../utils";
+import { ARTICLE_10_REFERENCES } from "../article10References";
 
 function PrivacyPage({ result, onContinue, onBack }) {
     const warnings = result.privacy_analysis?.warnings || [];
@@ -15,8 +16,9 @@ function PrivacyPage({ result, onContinue, onBack }) {
                     title="Privacy Considerations"
                     warnings={warnings}
                 >
-                    Supports privacy risk identification through user-provided information and simple dataset heuristics. It does not make a final legal or compliance determination.
+                    Reviews user-provided privacy information and potential personal-data columns.
                 </AssessmentHeader>
+                <ArticleReference {...ARTICLE_10_REFERENCES.privacy} />
 
                 <h4>Evaluation Methods</h4>
                 <p className="section-copy">

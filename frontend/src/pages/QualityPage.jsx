@@ -1,4 +1,5 @@
-import { AssessmentHeader, MethodExplanation, MetricTile } from "../components";
+import { ArticleReference, AssessmentHeader, MethodExplanation, MetricTile } from "../components";
+import { ARTICLE_10_REFERENCES } from "../article10References";
 import { formatNumber, renderWarnings, renderBooleanMap } from "../utils";
 
 function QualityPage({ result, onContinue, onBack }) {
@@ -16,8 +17,9 @@ function QualityPage({ result, onContinue, onBack }) {
                     title="Data Quality"
                     warnings={warnings}
                 >
-                    Evaluates measurable properties of the dataset and its documentation. The checks are derived from relevant data-quality concepts, but they are prototype methods rather than externally prescribed tests.
+                    Evaluates completeness, duplicate records, and metadata coverage.
                 </AssessmentHeader>
+                <ArticleReference {...ARTICLE_10_REFERENCES.quality} />
 
                 <h4>Evaluation Methods</h4>
                 <p className="section-copy">

@@ -5,11 +5,22 @@ import {
 } from "recharts";
 import { formatNumber } from "./utils";
 
-const COLORS = [
-    "#2563eb", "#0f766e", "#b45309", "#7c3aed",
-    "#be123c", "#0891b2", "#4d7c0f", "#9333ea",
-    "#475569", "#ca8a04",
+const DISTINCT_COLORS = [
+    "#2563eb", "#dc2626", "#16a34a", "#9333ea",
+    "#ea580c", "#0891b2", "#ca8a04", "#be123c",
+    "#4f46e5", "#0f766e", "#7c2d12", "#7e22ce",
+    "#0369a1", "#65a30d", "#c2410c", "#475569",
+    "#db2777", "#15803d", "#1d4ed8", "#854d0e",
 ];
+
+function createLocalColorMap(labels = []) {
+    return Object.fromEntries(
+        labels.map((label, index) => [
+            String(label),
+            DISTINCT_COLORS[index % DISTINCT_COLORS.length],
+        ])
+    );
+}
 
 function truncateLabel(value, maxLength = 28) {
     const label = String(value);
@@ -21,8 +32,25 @@ function truncateLabel(value, maxLength = 28) {
     return `${label.slice(0, maxLength - 1)}...`;
 }
 
-export function CategoricalChart({ featureName, featureData, showTitle = true }) {
+function ChartTooltip({ active, payload, label }) {
+    if (!active || !payload?.length) {
+        return null;
+    }
+
+    return (
+        <div className="chart-tooltip">
+            <p>{label}</p>
+            <strong>{Number(payload[0].value).toFixed(3)}</strong>
+        </div>
+    );
+}
+
+export function CategoricalChart({ featureName, featureData, showTitle = true, colorMap = {}, helperText }) {
     const values = featureData?.values || {};
+    const truncationText = featureData?.is_truncated
+        ? "This chart shows the 5 most frequent and 5 least frequent items to keep the overview compact."
+        : "";
+    const chartHelperText = helperText || truncationText;
 
     if (Object.keys(values).length === 0) {
         return (
@@ -37,10 +65,15 @@ export function CategoricalChart({ featureName, featureData, showTitle = true })
         name,
         value: Number(value),
     }));
+    const chartColorMap = {
+        ...createLocalColorMap(chartData.map((item) => item.name)),
+        ...colorMap,
+    };
 
     return (
-        <div style={{ marginBottom: "30px" }}>
+        <div className="chart-block">
             {showTitle && <h5>{featureName}</h5>}
+            {chartHelperText && <p className="chart-helper">{chartHelperText}</p>}
             <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -54,10 +87,14 @@ export function CategoricalChart({ featureName, featureData, showTitle = true })
                         tickFormatter={(value) => truncateLabel(value)}
                     />
                     <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
-                    <Tooltip />
+                    <Tooltip
+                        content={<ChartTooltip />}
+                        allowEscapeViewBox={{ x: false, y: true }}
+                        wrapperStyle={{ zIndex: 30 }}
+                    />
                     <Bar dataKey="value">
-                        {chartData.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {chartData.map((item) => (
+                            <Cell key={`cell-${item.name}`} fill={chartColorMap[item.name]} />
                         ))}
                     </Bar>
                 </BarChart>

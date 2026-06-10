@@ -61,7 +61,7 @@ def is_timestamp_column(col: str, series: pd.Series) -> bool:
     if sample.empty:
         return False
 
-    parsed = pd.to_datetime(sample, errors="coerce", format="mixed")
+    parsed = pd.to_datetime(sample, errors="coerce", format="mixed", utc=True)
     parse_ratio = parsed.notna().mean()
 
     return parse_ratio >= 0.8
@@ -103,7 +103,10 @@ def compute_categorical_distribution(series: pd.Series) -> dict:
             "values": {},
         }
 
-    if len(counts) > 10:
+    total_categories = len(counts)
+    is_truncated = total_categories > 10
+
+    if is_truncated:
         selected = pd.concat([counts.head(5), counts.tail(5)])
     else:
         selected = counts
@@ -111,6 +114,8 @@ def compute_categorical_distribution(series: pd.Series) -> dict:
     return {
         "type": "categorical",
         "values": {str(k): float(v) for k, v in selected.items()},
+        "total_categories": int(total_categories),
+        "is_truncated": is_truncated,
     }
 
 def compute_numeric_distribution(series: pd.Series, max_points: int = 50) -> dict:
@@ -169,6 +174,7 @@ def prepare_event_log_sequence_df(
         event_log_df[timestamp_column],
         errors="coerce",
         format="mixed",
+        utc=True,
     )
     timestamp_parse_ratio = event_log_df["_parsed_timestamp"].notna().mean()
 
@@ -200,6 +206,7 @@ def prepare_event_log_time_df(
         event_log_df[timestamp_column],
         errors="coerce",
         format="mixed",
+        utc=True,
     )
     timestamp_parse_ratio = event_log_df["_parsed_timestamp"].notna().mean()
 
@@ -419,6 +426,181 @@ def compute_process_variant_summary(
         "rare_variant_count": rare_variant_count,
     }
 
+def compute_total_variation_distance(first: dict, second: dict) -> float:
+    keys = set(first) | set(second)
+    return float(0.5 * sum(abs(first.get(key, 0.0) - second.get(key, 0.0)) for key in keys))
+
+def compute_distribution_changes(
+    early_distribution: dict,
+    late_distribution: dict,
+    max_changes: int = 5,
+) -> dict:
+    keys = set(early_distribution) | set(late_distribution)
+    changes = []
+
+    for key in keys:
+        early_value = float(early_distribution.get(key, 0.0))
+        late_value = float(late_distribution.get(key, 0.0))
+        changes.append({
+            "label": str(key),
+            "early_frequency": early_value,
+            "late_frequency": late_value,
+            "absolute_change": abs(late_value - early_value),
+            "direction": "increased" if late_value > early_value else "decreased",
+        })
+
+    changes.sort(key=lambda item: item["absolute_change"], reverse=True)
+    return {
+        "top_changes": changes[:max_changes],
+        "new_late": sorted(str(key) for key in keys if early_distribution.get(key, 0.0) == 0 and late_distribution.get(key, 0.0) > 0),
+        "disappearing_late": sorted(str(key) for key in keys if early_distribution.get(key, 0.0) > 0 and late_distribution.get(key, 0.0) == 0),
+    }
+
+def top_distribution_values(distribution: dict, max_values: int = 5) -> dict:
+    return {
+        str(key): float(value)
+        for key, value in sorted(
+            distribution.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )[:max_values]
+    }
+
+def compute_case_variants(
+    event_log_df: pd.DataFrame,
+    case_id_column: str,
+    activity_column: str,
+) -> pd.Series:
+    return event_log_df.groupby(case_id_column)[activity_column].apply(
+        lambda activities: " -> ".join(activities.astype(str))
+    )
+
+def compute_event_log_drift_signals(
+    df: pd.DataFrame,
+    case_id_column: str,
+    activity_column: str,
+    timestamp_column: str,
+    min_cases: int = 10,
+) -> dict:
+    event_log_df, used_timestamp_order = prepare_event_log_sequence_df(
+        df,
+        case_id_column,
+        activity_column,
+        timestamp_column,
+    )
+
+    if event_log_df.empty or not used_timestamp_order:
+        return {
+            "type": "drift_signals",
+            "computed": False,
+            "reason": "Reliable timestamp, case, and activity information is required.",
+        }
+
+    case_starts = (
+        event_log_df
+        .groupby(case_id_column)["_parsed_timestamp"]
+        .min()
+        .sort_values(kind="mergesort")
+    )
+
+    if len(case_starts) < min_cases:
+        return {
+            "type": "drift_signals",
+            "computed": False,
+            "reason": f"At least {min_cases} cases are required for early/late window comparison.",
+        }
+
+    earliest_case_start = case_starts.min()
+    latest_case_start = case_starts.max()
+    split_timestamp = earliest_case_start + ((latest_case_start - earliest_case_start) / 2)
+
+    early_case_starts = case_starts[case_starts <= split_timestamp]
+    late_case_starts = case_starts[case_starts > split_timestamp]
+
+    if len(early_case_starts) < 2 or len(late_case_starts) < 2:
+        return {
+            "type": "drift_signals",
+            "computed": False,
+            "reason": "Both time windows need at least two cases for early/late comparison.",
+        }
+
+    early_case_ids = set(early_case_starts.index)
+    late_case_ids = set(late_case_starts.index)
+
+    early_events = event_log_df[event_log_df[case_id_column].isin(early_case_ids)]
+    late_events = event_log_df[event_log_df[case_id_column].isin(late_case_ids)]
+
+    early_activity_distribution = early_events[activity_column].astype(str).value_counts(normalize=True).to_dict()
+    late_activity_distribution = late_events[activity_column].astype(str).value_counts(normalize=True).to_dict()
+    activity_changes = compute_distribution_changes(
+        early_activity_distribution,
+        late_activity_distribution,
+    )
+    activity_shift_score = compute_total_variation_distance(
+        early_activity_distribution,
+        late_activity_distribution,
+    )
+
+    case_variants = compute_case_variants(event_log_df, case_id_column, activity_column)
+    early_variant_distribution = case_variants[case_variants.index.isin(early_case_ids)].value_counts(normalize=True).to_dict()
+    late_variant_distribution = case_variants[case_variants.index.isin(late_case_ids)].value_counts(normalize=True).to_dict()
+    variant_changes = compute_distribution_changes(
+        early_variant_distribution,
+        late_variant_distribution,
+    )
+    variant_shift_score = compute_total_variation_distance(
+        early_variant_distribution,
+        late_variant_distribution,
+    )
+
+    dominant_early_variant = next(iter(early_variant_distribution), None)
+    dominant_late_variant = next(iter(late_variant_distribution), None)
+    early_variant_count = len(early_variant_distribution)
+    late_variant_count = len(late_variant_distribution)
+    variant_diversity_change = late_variant_count - early_variant_count
+
+    return {
+        "type": "drift_signals",
+        "computed": True,
+        "split_strategy": "time_midpoint",
+        "split_timestamp": split_timestamp.isoformat(),
+        "early_window": {
+            "case_count": len(early_case_ids),
+            "start": early_case_starts.min().isoformat(),
+            "end": early_case_starts.max().isoformat(),
+        },
+        "late_window": {
+            "case_count": len(late_case_ids),
+            "start": late_case_starts.min().isoformat(),
+            "end": late_case_starts.max().isoformat(),
+        },
+        "activity_shift": {
+            "score": float(activity_shift_score),
+            "early_distribution": top_distribution_values(early_activity_distribution),
+            "late_distribution": top_distribution_values(late_activity_distribution),
+            "top_changes": activity_changes["top_changes"],
+            "new_late": activity_changes["new_late"][:10],
+            "disappearing_late": activity_changes["disappearing_late"][:10],
+            "new_late_count": len(activity_changes["new_late"]),
+            "disappearing_late_count": len(activity_changes["disappearing_late"]),
+        },
+        "variant_shift": {
+            "score": float(variant_shift_score),
+            "early_variant_count": early_variant_count,
+            "late_variant_count": late_variant_count,
+            "variant_diversity_change": variant_diversity_change,
+            "dominant_early_variant": str(dominant_early_variant) if dominant_early_variant else None,
+            "dominant_late_variant": str(dominant_late_variant) if dominant_late_variant else None,
+            "early_distribution": top_distribution_values(early_variant_distribution),
+            "late_distribution": top_distribution_values(late_variant_distribution),
+            "top_changes": variant_changes["top_changes"],
+            "new_late": variant_changes["new_late"][:10],
+            "disappearing_late": variant_changes["disappearing_late"][:10],
+            "new_late_count": len(variant_changes["new_late"]),
+            "disappearing_late_count": len(variant_changes["disappearing_late"]),
+        },
+    }
+
 def compute_event_log_distribution_summary(df: pd.DataFrame) -> dict:
     event_log_columns = detect_event_log_columns(df)
     summary = {}
@@ -464,6 +646,15 @@ def compute_event_log_distribution_summary(df: pd.DataFrame) -> dict:
         )
         if variants["values"]:
             summary["Event-log process variants"] = variants
+
+        drift_signals = compute_event_log_drift_signals(
+            df,
+            case_id_column,
+            activity_column,
+            timestamp_column,
+        )
+        if drift_signals["computed"]:
+            summary["Event-log drift-oriented signals"] = drift_signals
 
     return summary
 
@@ -581,6 +772,44 @@ def generate_event_log_bias_warnings(df: pd.DataFrame) -> list[str]:
             warnings.append(
                 f"Many process variants occur only once ({rare_variant_count} rare variants)"
             )
+
+        drift_signals = compute_event_log_drift_signals(
+            df,
+            case_id_column,
+            activity_column,
+            timestamp_column,
+        )
+        if drift_signals["computed"]:
+            activity_shift = drift_signals["activity_shift"]
+            variant_shift = drift_signals["variant_shift"]
+
+            if (
+                activity_shift["score"] > 0.3
+                or activity_shift["new_late_count"] >= 3
+                or activity_shift["disappearing_late_count"] >= 3
+            ):
+                warnings.append(
+                    "Activity distribution changes noticeably between early and late time windows"
+                )
+
+            variant_diversity_change = abs(variant_shift["variant_diversity_change"])
+            largest_variant_count = max(
+                variant_shift["early_variant_count"],
+                variant_shift["late_variant_count"],
+                1,
+            )
+            variant_diversity_change_share = variant_diversity_change / largest_variant_count
+
+            if (
+                variant_shift["score"] > 0.3
+                or variant_shift["dominant_early_variant"] != variant_shift["dominant_late_variant"]
+                or variant_diversity_change_share > 0.3
+                or variant_shift["new_late_count"] >= 10
+                or variant_shift["disappearing_late_count"] >= 10
+            ):
+                warnings.append(
+                    "Process variant distribution changes noticeably between early and late time windows"
+                )
 
     elif case_id_column is not None or timestamp_column is not None:
         missing_columns = []

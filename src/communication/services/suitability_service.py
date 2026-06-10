@@ -23,20 +23,24 @@ def check_suitability(
 
     # 1. Context completeness checks
     if not intended_use or intended_use.strip() == "":
-        warnings.append("Missing intended use information")
+        warnings.append("Missing intended use information, which may limit assessment of dataset suitability")
 
     if not deployment_context or deployment_context.strip() == "":
-        warnings.append("Missing deployment context information")
+        warnings.append("Missing deployment context information, which may limit contextual governance review")
 
     # 2. Target column checks for supervised tasks
     supervised_tasks = ["classification", "regression"]
 
     if task_type in supervised_tasks:
         if not target_column:
-            warnings.append(f"No target column provided for {task_type} task")
+            warnings.append(
+                f"No target column provided for {task_type} task, which may prevent validation of the declared supervised task"
+            )
 
         if target_column and target_column not in df.columns:
-            warnings.append(f"Target column '{target_column}' not found in dataset")
+            warnings.append(
+                f"Target column '{target_column}' not found in dataset, which may indicate a metadata or schema mismatch"
+            )
 
     # 3. Task-type consistency checks
     if task_type == "classification" and target_column in df.columns:
@@ -44,20 +48,20 @@ def check_suitability(
 
         if unique_values > 20:
             warnings.append(
-                "Target column has many unique values; it may not be suitable for classification"
+                "Target column has many unique values; it may not be suitable for classification because classes may be too granular"
             )
 
     if task_type == "regression" and target_column in df.columns:
         if not pd.api.types.is_numeric_dtype(df[target_column]):
             warnings.append(
-                "Target column is not numeric; it may not be suitable for regression"
+                "Target column is not numeric; it may not be suitable for regression because regression requires numeric target values"
             )
 
     # 4. Unknown task type
     allowed_task_types = ["classification", "regression", "clustering", "other"]
 
     if task_type and task_type not in allowed_task_types:
-        warnings.append(f"Unknown task type: {task_type}")
+        warnings.append(f"Unknown task type: {task_type}, which may limit task-specific suitability checks")
 
     # 5. Event-log-oriented structural checks
     context_values = (intended_use, deployment_context, domain, preprocessing_steps)
@@ -73,7 +77,7 @@ def check_suitability(
         for role, label in {"case_id": "case ID", "timestamp": "timestamp"}.items():
             if event_log_columns[role] is None:
                 warnings.append(
-                    f"Remaining-time-oriented regression requires a likely {label} column"
+                    f"Remaining-time-oriented regression requires a likely {label} column because temporal case progression is needed"
                 )
                 specifically_warned_roles.add(role)
 
@@ -81,7 +85,7 @@ def check_suitability(
         for role, label in {"case_id": "case ID", "activity": "activity"}.items():
             if event_log_columns[role] is None:
                 warnings.append(
-                    f"Next-activity-oriented classification requires a likely {label} column"
+                    f"Next-activity-oriented classification requires a likely {label} column because ordered activity sequences are needed"
                 )
                 specifically_warned_roles.add(role)
 
@@ -95,7 +99,7 @@ def check_suitability(
         for role, label in required_columns.items():
             if event_log_columns[role] is None and role not in specifically_warned_roles:
                 warnings.append(
-                    f"Event-log-oriented analysis suggested, but no likely {label} column was detected"
+                    f"Event-log-oriented analysis suggested, but no likely {label} column was detected, which may limit process-oriented review"
                 )
 
     return warnings

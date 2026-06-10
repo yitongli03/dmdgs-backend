@@ -100,13 +100,19 @@ async def upload_dataset(
     quality_warnings = []
 
     if mvr > 0.2:
-        quality_warnings.append("High missing value ratio detected (>20%)")
+        quality_warnings.append(
+            "High missing value ratio detected (>20%), which may indicate incomplete records or limited data coverage"
+        )
 
     if dr > 0.2:
-        quality_warnings.append("High duplicate rate detected (>20%)")
+        quality_warnings.append(
+            "High duplicate rate detected (>20%), which may indicate repeated records or insufficient deduplication"
+        )
 
     if not all(metadata_completeness.values()):
-        quality_warnings.append("Incomplete metadata fields detected")
+        quality_warnings.append(
+            "Incomplete metadata fields detected, which may limit documentation and later governance review"
+        )
 
     # Suitability analysis
     suitability_warnings = check_suitability(

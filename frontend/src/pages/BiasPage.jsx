@@ -226,13 +226,13 @@ function DriftSignalsSummary({ driftSignals }) {
                 <MetricTile
                     label="Activity shift score"
                     value={formatShiftScore(activityShift.score)}
-                    helper="Total variation distance between early and late activity distributions. 0 means identical distributions."
+                    helper="Total variation distance between early and late activity distributions. Scores range from 0 to 1."
                     status={activityShift.score > 0.3 ? "warning" : "neutral"}
                 />
                 <MetricTile
                     label="Variant shift score"
                     value={formatShiftScore(variantShift.score)}
-                    helper="Total variation distance between early and late process variant distributions. 0 means identical distributions."
+                    helper="Total variation distance between early and late process variant distributions. Scores range from 0 to 1."
                     status={variantShift.score > 0.3 ? "warning" : "neutral"}
                 />
                 <MetricTile
@@ -245,7 +245,7 @@ function DriftSignalsSummary({ driftSignals }) {
                 />
             </div>
             <p className="section-copy">
-                Higher shift scores indicate stronger distribution changes between the early and late period.
+                Shift scores range from 0 to 1, where 0 means no distribution change and higher values indicate stronger changes between the early and late time windows.
             </p>
 
             <div className="drift-review-block">
@@ -272,7 +272,7 @@ function DriftSignalsSummary({ driftSignals }) {
                 <ChangesTable
                     changes={activityShift.top_changes}
                     itemLabel="Activity"
-                    helper="The following table lists the 5 activities with the largest absolute frequency changes between the early and late period."
+                    helper="The following table lists the 5 activities with the largest absolute frequency changes between the early and late time windows."
                 />
                 <div className="two-column-detail">
                     <CompactList
@@ -310,7 +310,7 @@ function DriftSignalsSummary({ driftSignals }) {
                 <ChangesTable
                     changes={variantShift.top_changes}
                     itemLabel="Process variant"
-                    helper="The following table lists the 5 process variants with the largest absolute frequency changes between the early and late period."
+                    helper="The following table lists the 5 process variants with the largest absolute frequency changes between the early and late time windows."
                 />
                 <div className="two-column-detail">
                     <CompactList
@@ -385,9 +385,9 @@ function BiasPage({ result, onContinue, onBack }) {
                     />
                     <MethodExplanation
                         title="Event-log Governance Signals"
-                        computes="Case duration statistics, activity frequencies, common transitions, and process variants when event-log columns are detected."
-                        how="The tool groups events by case, orders them by timestamp where possible, then summarizes durations, activity patterns, direct transitions, and ordered process paths."
-                        why="These signals support human review of temporal structure, dominant paths, rare behaviour, and unusual process patterns."
+                        computes="Case duration statistics, activity frequencies, common transitions, process variants, and drift-oriented distribution-change signals when event-log columns are detected."
+                        how="The tool groups events by case, orders them by timestamp where possible, then summarizes durations, activity patterns, direct transitions, ordered process paths, and early/late distribution changes."
+                        why="These signals support human review of temporal structure, dominant paths, rare behaviour, unusual process patterns, and changes over time."
                     />
                 </div>
 
@@ -557,7 +557,7 @@ function BiasPage({ result, onContinue, onBack }) {
                                 warnings={warningGroups.drift}
                             >
                                 <p className="section-copy">
-                                    Compares early and late time periods split at the midpoint of the case-start timeline. These are distribution-change signals, not formal drift detection.
+                                    Compares early and late time windows split at the midpoint of the case-start timeline. These are distribution-change signals, not formal drift detection.
                                 </p>
                                 <DriftSignalsSummary driftSignals={driftSignals} />
                                 <RelatedWarnings warnings={warningGroups.drift} />

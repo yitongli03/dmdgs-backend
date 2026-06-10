@@ -42,14 +42,20 @@ def generate_privacy_warnings(
 
     # Case 1: Personal data declared but no explanation
     if contains_personal_data and (privacy_notes is None or privacy_notes.strip() == ""):
-        warnings.append("Personal data declared but no additional privacy notes provided")
+        warnings.append(
+            "Personal data declared but no additional privacy notes provided, which may limit safeguard documentation"
+        )
 
     # Case 2: Potential personal data detected automatically
     if len(detected_columns) > 0:
-        warnings.append(f"Potential personal data detected in columns: {', '.join(detected_columns)}")
+        warnings.append(
+            f"Potential personal data detected in columns: {', '.join(detected_columns)}, which may require additional privacy review"
+        )
 
     # Case 3: Mismatch (user says no personal data, but we detect something)
     if not contains_personal_data and len(detected_columns) > 0:
-        warnings.append("Possible mismatch: potential personal data detected but not declared")  
+        warnings.append(
+            "Possible mismatch: potential personal data detected but not declared, which may indicate incomplete privacy metadata"
+        )
 
     return warnings 

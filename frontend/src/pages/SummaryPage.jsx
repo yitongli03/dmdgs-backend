@@ -292,11 +292,22 @@ function EventLogSummarySection({ eventLogSummary, warningGroups }) {
                         <div className="metric-grid">
                             <MetricTile label="Early cases" value={driftSignals.early_window?.case_count ?? "Not available"} />
                             <MetricTile label="Late cases" value={driftSignals.late_window?.case_count ?? "Not available"} />
-                            <MetricTile label="Activity shift score" value={formatShiftScore(driftSignals.activity_shift?.score)} />
-                            <MetricTile label="Variant shift score" value={formatShiftScore(driftSignals.variant_shift?.score)} />
+                            <MetricTile
+                                label="Activity shift score"
+                                value={formatShiftScore(driftSignals.activity_shift?.score)}
+                                helper="0 means no activity distribution change; higher values indicate stronger changes."
+                            />
+                            <MetricTile
+                                label="Variant shift score"
+                                value={formatShiftScore(driftSignals.variant_shift?.score)}
+                                helper="0 means no process-variant distribution change; higher values indicate stronger changes."
+                            />
                             <MetricTile label="Early variants" value={driftSignals.variant_shift?.early_variant_count ?? "Not available"} />
                             <MetricTile label="Late variants" value={driftSignals.variant_shift?.late_variant_count ?? "Not available"} />
                         </div>
+                        <p className="section-copy">
+                            Shift scores range from 0 to 1 and compare early and late time windows. They are distribution-change signals, not formal drift detection.
+                        </p>
                         <RelatedWarnings warnings={warningGroups.drift} />
                 </SummaryDetail>
             )}

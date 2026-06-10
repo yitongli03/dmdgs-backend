@@ -714,12 +714,16 @@ def generate_event_log_bias_warnings(df: pd.DataFrame) -> list[str]:
     activity_counts = df[activity_column].dropna().astype(str).value_counts(normalize=True)
 
     if not activity_counts.empty and float(activity_counts.iloc[0]) > 0.7:
-        warnings.append("One activity dominates the event log distribution (>70%)")
+        warnings.append(
+            "One activity dominates the event log distribution (>70%), "
+            "which may indicate strongly concentrated process behavior"
+        )
 
     rare_activity_count = int((activity_counts < 0.01).sum())
     if rare_activity_count >= 5:
         warnings.append(
-            f"Many rare activities detected ({rare_activity_count} activities below 1% frequency)"
+            f"Many rare activities detected ({rare_activity_count} activities below 1% frequency), "
+            "which may indicate unusual or underrepresented process behavior"
         )
 
     if (
@@ -746,12 +750,16 @@ def generate_event_log_bias_warnings(df: pd.DataFrame) -> list[str]:
         transition_values = transitions["values"]
 
         if transition_values and max(transition_values.values()) > 0.7:
-            warnings.append("One activity transition dominates the event log distribution (>70%)")
+            warnings.append(
+                "One activity transition dominates the event log distribution (>70%), "
+                "which may indicate a strongly dominant process path"
+            )
 
         rare_transition_count = sum(value < 0.01 for value in transition_values.values())
         if rare_transition_count >= 10:
             warnings.append(
-                f"Many rare activity transitions detected ({rare_transition_count} transitions below 1% frequency)"
+                f"Many rare activity transitions detected ({rare_transition_count} transitions below 1% frequency), "
+                "which may indicate uncommon or underrepresented process paths"
             )
 
         variants = compute_process_variant_summary(
@@ -764,13 +772,17 @@ def generate_event_log_bias_warnings(df: pd.DataFrame) -> list[str]:
         variant_values = variants["values"]
 
         if variant_values and max(variant_values.values()) > 0.5:
-            warnings.append("One process variant dominates the event log (>50% of cases)")
+            warnings.append(
+                "One process variant dominates the event log (>50% of cases), "
+                "which may indicate that one workflow pattern is strongly overrepresented"
+            )
 
         rare_variant_count = variants["rare_variant_count"]
         total_variants = variants["total_variants"]
         if rare_variant_count >= 5 and total_variants > 0:
             warnings.append(
-                f"Many process variants occur only once ({rare_variant_count} rare variants)"
+                f"Many process variants occur only once ({rare_variant_count} rare variants), "
+                "which may indicate highly diverse or underrepresented process behavior"
             )
 
         drift_signals = compute_event_log_drift_signals(
@@ -789,7 +801,8 @@ def generate_event_log_bias_warnings(df: pd.DataFrame) -> list[str]:
                 or activity_shift["disappearing_late_count"] >= 3
             ):
                 warnings.append(
-                    "Activity distribution changes noticeably between early and late time windows"
+                    "Activity distribution changes noticeably between early and late time windows, "
+                    "which may indicate changing activity patterns over time"
                 )
 
             variant_diversity_change = abs(variant_shift["variant_diversity_change"])
@@ -808,7 +821,8 @@ def generate_event_log_bias_warnings(df: pd.DataFrame) -> list[str]:
                 or variant_shift["disappearing_late_count"] >= 10
             ):
                 warnings.append(
-                    "Process variant distribution changes noticeably between early and late time windows"
+                    "Process variant distribution changes noticeably between early and late time windows, "
+                    "which may indicate changing process behavior over time"
                 )
 
     elif case_id_column is not None or timestamp_column is not None:
@@ -834,7 +848,10 @@ def generate_bias_warnings(
     task_type = task_type.lower().strip() if task_type else ""
 
     if task_type == "classification" and imbalance_ratio is not None and imbalance_ratio > 2.0:
-        warnings.append("Class imbalance detected (imbalance ratio > 2.0)")
+        warnings.append(
+            "Class imbalance detected (imbalance ratio > 2.0), "
+            "which may indicate underrepresented target classes"
+        )
 
     if event_log_warnings:
         warnings.extend(event_log_warnings)

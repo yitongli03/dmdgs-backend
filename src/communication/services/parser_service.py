@@ -3,7 +3,17 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 def parse_csv(file_path: str) -> pd.DataFrame:
-    return pd.read_csv(file_path)
+    for encoding in ("utf-8", "cp1252"):
+        try:
+            return pd.read_csv(file_path, encoding=encoding)
+        except UnicodeDecodeError:
+            continue
+        except (pd.errors.EmptyDataError, pd.errors.ParserError) as exc:
+            raise ValueError(f"Could not parse CSV file: {exc}") from exc
+
+    raise ValueError(
+        "Could not decode CSV file. Please provide a UTF-8 or Windows-1252 encoded CSV file"
+    )
 
 def parse_xes(file_path: str) -> pd.DataFrame:
     try:
@@ -68,7 +78,18 @@ def normalize_event_log_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         if source in df.columns and target not in df.columns
     }
 
-    return df.rename(columns=available_renames)
+    df = df.rename(columns=available_renames)
+
+    for col in df.select_dtypes(include="object").columns:
+        cleaned = df[col].str.replace(",", "", regex=False)
+        non_blank = cleaned[cleaned.notna() & (cleaned.str.strip() != "")]
+        if non_blank.empty:
+            continue
+        converted_test = pd.to_numeric(non_blank, errors="coerce")
+        if converted_test.notna().all():
+            df[col] = pd.to_numeric(cleaned, errors="coerce")
+
+    return df
 
 def parse_dataset(file_path: str) -> pd.DataFrame:
     extension = Path(file_path).suffix.lower()

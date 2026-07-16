@@ -13,7 +13,7 @@ const TARGET_PATTERNS = [
 ];
 
 const CONSISTENCY_PATTERNS = [
-    "unique values",
+    "distinct values",
     "not numeric",
     "Unknown task type",
 ];
@@ -25,7 +25,8 @@ const EVENT_LOG_WARNING_PATTERNS = [
 ];
 
 function matchesAny(warning, patterns) {
-    return patterns.some((p) => warning.includes(p));
+    const normalized = String(warning).toLowerCase();
+    return patterns.some((p) => normalized.includes(p.toLowerCase()));
 }
 
 function CheckGroup({ title, description, warnings }) {
@@ -47,7 +48,7 @@ function CheckGroup({ title, description, warnings }) {
 }
 
 function EventLogStructureSummary({ result, warnings }) {
-    const columns = result.schema_info?.columns || result.schema_info?.column_names || [];
+    const columns = result.schema_info?.columns || [];
     const detected = detectEventLogColumns(columns);
     const eventLogWarnings = warnings.filter((w) => matchesAny(w, EVENT_LOG_WARNING_PATTERNS));
     const hasDetectedStructure = detected.caseId || detected.activity || detected.timestamp;
@@ -127,9 +128,9 @@ function SuitabilityPage({ result, onContinue, onBack }) {
                         why="If the target is missing or incorrectly named, the dataset cannot support the declared supervised learning task as described."
                     />
                     <MethodExplanation
-                        title="Task-Type Plausibility"
+                        title="Task and Target Compatibility"
                         computes="Basic consistency between the declared task type and the target column."
-                        how="For classification, target columns with more than 20 unique values are flagged. For regression, a non-numeric target is flagged."
+                        how="For classification, the target must contain at least two distinct values. For regression, the target must be numeric."
                         why="These checks catch common mismatches between dataset structure and intended modelling task before deeper analysis."
                     />
                     <MethodExplanation
@@ -153,7 +154,7 @@ function SuitabilityPage({ result, onContinue, onBack }) {
                 />
 
                 <CheckGroup
-                    title="Task-Type Consistency &amp; Target Variable Plausibility"
+                    title="Task and Target Compatibility"
                     description={CONSISTENCY_PATTERNS}
                     warnings={warnings}
                 />

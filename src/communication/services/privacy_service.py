@@ -1,9 +1,10 @@
 import pandas as pd
-import re
+
+from communication.services.event_log_service import normalize_event_log_text
 
 
 def _column_tokens(column_name: str) -> set[str]:
-    normalized = re.sub(r"[^a-zA-Z0-9]+", " ", column_name.lower())
+    normalized = normalize_event_log_text(column_name)
     return {token for token in normalized.split() if token}
 
 
@@ -46,16 +47,11 @@ def generate_privacy_warnings(
             "Personal data declared but no additional privacy notes provided, which may limit safeguard documentation"
         )
 
-    # Case 2: Potential personal data detected automatically
-    if len(detected_columns) > 0:
-        warnings.append(
-            f"Potential personal data detected in columns: {', '.join(detected_columns)}, which may require additional privacy review"
-        )
-
-    # Case 3: Mismatch (user says no personal data, but we detect something)
+    # Case 2: User declaration conflicts with heuristic column detection
     if not contains_personal_data and len(detected_columns) > 0:
         warnings.append(
-            "Possible mismatch: potential personal data detected but not declared, which may indicate incomplete privacy metadata"
+            "Possible mismatch: potential personal data detected in columns "
+            f"{', '.join(detected_columns)} but not declared, which may indicate incomplete privacy metadata"
         )
 
     return warnings 

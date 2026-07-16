@@ -8,14 +8,16 @@ EVENT_LOG_COLUMN_PATTERNS = {
     "case_id": {"case id", "case", "ticket id", "process id"},
     "activity": {"activity", "event", "action", "task"},
     "timestamp": {"timestamp", "time", "complete timestamp", "date"},
+    # resource is detected so bias_service can exclude it from generic feature distributions,
+    # but no dedicated governance signal is computed from it at this time.
     "resource": {"resource", "user", "employee", "agent"},
 }
 
-EVENT_LOG_CONTEXT_KEYWORDS = {
+EVENT_LOG_CONTEXT_PHRASES = {
     "event log",
-    "event-log",
-    "process",
     "process mining",
+    "process oriented",
+    "process prediction",
     "workflow",
     "activity",
     "trace",
@@ -51,7 +53,7 @@ def detect_event_log_columns(df: pd.DataFrame) -> dict[str, Optional[str]]:
 
 def suggests_event_log_context(*values: object) -> bool:
     context = " ".join(normalize_event_log_text(value) for value in values if value)
-    return any(keyword in context for keyword in EVENT_LOG_CONTEXT_KEYWORDS)
+    return any(phrase in context for phrase in EVENT_LOG_CONTEXT_PHRASES)
 
 
 def suggests_remaining_time_task(task_type: str, *values: object) -> bool:
@@ -59,7 +61,9 @@ def suggests_remaining_time_task(task_type: str, *values: object) -> bool:
     return task_type == "regression" and (
         "remaining time" in context
         or "duration" in context
-        or "process" in context
+        or "process mining" in context
+        or "process oriented" in context
+        or "process prediction" in context
         or "event log" in context
     )
 
@@ -69,6 +73,8 @@ def suggests_next_activity_task(task_type: str, *values: object) -> bool:
     return task_type == "classification" and (
         "next activity" in context
         or "activity" in context
-        or "process" in context
+        or "process mining" in context
+        or "process oriented" in context
+        or "process prediction" in context
         or "event log" in context
     )

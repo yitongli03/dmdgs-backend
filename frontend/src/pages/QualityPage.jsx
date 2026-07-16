@@ -6,6 +6,8 @@ function QualityPage({ result, onContinue, onBack }) {
     const warnings = result.data_quality_analysis?.warnings || [];
     const missingValueRatio = result.data_quality_analysis?.missing_value_ratio;
     const duplicateRate = result.data_quality_analysis?.duplicate_rate;
+    const isXesDataset = result.file_info?.filename?.toLowerCase().endsWith(".xes");
+    const isEventLog = isXesDataset || Object.keys(result.bias_analysis?.event_log_summary || {}).length > 0;
 
     return (
         <div>
@@ -61,6 +63,11 @@ function QualityPage({ result, onContinue, onBack }) {
                         helper="Consistency indicator: exact duplicate rows divided by all records. The prototype flags values above 0.2."
                     />
                 </div>
+                {isEventLog && (
+                    <p className="info-note">
+                        Event log datasets may produce high missing-value ratios because not every event or case contains every attribute. This applies to XES files and CSV files derived from XES formats.
+                    </p>
+                )}
 
                 <h4>
                     Metadata Completeness

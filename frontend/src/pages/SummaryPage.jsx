@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { ArticleReference, MetricTile, StatusBadge } from "../components";
 import { formatNumber, renderWarnings, renderFlagStatus, renderBooleanMap, getWarningCount } from "../utils";
-import { CategoricalChart, FeatureDistributions } from "../Charts";
-import { EVENT_LOG_FEATURES, detectEventLogColumns, isTargetActivityColumn } from "../eventLogUtils";
+import { CategoricalChart, DurationDistributionChart, FeatureDistributions } from "../Charts";
+import { detectEventLogColumns, isTargetActivityColumn } from "../eventLogUtils";
 import { ARTICLE_10_REFERENCES } from "../article10References";
 
 const SUITABILITY_CONTEXT_PATTERNS = [
@@ -15,7 +16,7 @@ const SUITABILITY_TARGET_PATTERNS = [
 ];
 
 const SUITABILITY_TASK_PATTERNS = [
-    "unique values",
+    "distinct values",
     "not numeric",
     "unknown task type",
 ];
@@ -70,10 +71,10 @@ function getBiasWarningGroups(warnings = []) {
             groups.transitions.push(warning);
         } else if (includesAny(normalized, ["variant"])) {
             groups.variants.push(warning);
-        } else if (includesAny(normalized, ["duration", "durations", "one event", "95th percentile"])) {
-            groups.duration.push(warning);
         } else if (includesAny(normalized, ["timestamp", "sequence", "row order"])) {
             groups.eventLogReliability.push(warning);
+        } else if (includesAny(normalized, ["duration", "durations", "one event", "95th percentile"])) {
+            groups.duration.push(warning);
         } else if (includesAny(normalized, ["activity", "activities"])) {
             groups.activity.push(warning);
         } else if (includesAny(normalized, ["class", "imbalance ratio", "imbalance"])) {
@@ -114,7 +115,7 @@ function SuitabilityStatusRow({ label, isOk, okLabel = "OK", warningLabel = "Nee
 
 function SuitabilitySummarySection({ result }) {
     const warnings = result.suitability_analysis?.warnings || [];
-    const columns = result.schema_info?.columns || result.schema_info?.column_names || [];
+    const columns = result.schema_info?.columns || [];
     const detectedEventLogColumns = detectEventLogColumns(columns);
     const eventLogWarningCount = countMatchingWarnings(warnings, SUITABILITY_EVENT_LOG_PATTERNS);
     const hasEventLogContext = Boolean(
@@ -224,8 +225,19 @@ function EventLogSummarySection({ eventLogSummary, warningGroups }) {
                             <MetricTile label="Minimum duration" value={durationSummary.min_duration} />
                             <MetricTile label="Mean duration" value={durationSummary.mean_duration} />
                             <MetricTile label="Median duration" value={durationSummary.median_duration} />
+                            <MetricTile label="95th percentile" value={durationSummary.p95_duration} />
                             <MetricTile label="Maximum duration" value={durationSummary.max_duration} />
                         </div>
+                        {durationSummary.duration_distribution && (
+                            <DurationDistributionChart
+                                featureName="Case duration distribution (logarithmic scale)"
+                                featureData={durationSummary.duration_distribution}
+                                markerSeconds={durationSummary.mean_duration_seconds}
+                                medianSeconds={durationSummary.median_duration_seconds}
+                                p95Seconds={durationSummary.p95_duration_seconds}
+                                helperText="Case durations are grouped into logarithmically spaced intervals. The curve shows the number of cases in each interval. Red dashed: mean. Green dashed: median. Orange dashed: 95th percentile. A large gap between mean and median indicates a skewed distribution."
+                            />
+                        )}
                         <RelatedWarnings warnings={warningGroups.duration} />
                 </SummaryDetail>
             )}
@@ -272,7 +284,7 @@ function EventLogSummarySection({ eventLogSummary, warningGroups }) {
                                 <MetricTile label="Total variants" value={processVariants.total_variants} />
                             )}
                             {processVariants.rare_variant_count !== undefined && (
-                                <MetricTile label="Rare variants" value={processVariants.rare_variant_count} />
+                                <MetricTile label="Singleton variants" value={processVariants.rare_variant_count} />
                             )}
                         </div>
                         <CategoricalChart
@@ -295,46 +307,86 @@ function EventLogSummarySection({ eventLogSummary, warningGroups }) {
                             <MetricTile
                                 label="Activity shift score"
                                 value={formatShiftScore(driftSignals.activity_shift?.score)}
-                                helper="0 means no activity distribution change; higher values indicate stronger changes."
+                                helper="Summarizes the overall difference between early and late activity frequency distributions."
                             />
                             <MetricTile
                                 label="Variant shift score"
                                 value={formatShiftScore(driftSignals.variant_shift?.score)}
-                                helper="0 means no process-variant distribution change; higher values indicate stronger changes."
+                                helper="Summarizes early/late process-variant frequency differences. Singleton and sub-1% variants are grouped to reduce noise from very rare paths."
                             />
                             <MetricTile label="Early variants" value={driftSignals.variant_shift?.early_variant_count ?? "Not available"} />
                             <MetricTile label="Late variants" value={driftSignals.variant_shift?.late_variant_count ?? "Not available"} />
                         </div>
                         <p className="section-copy">
-                            Shift scores range from 0 to 1 and compare early and late time windows. They are distribution-change signals, not formal drift detection.
+                            Shift scores range from 0 to 1. A score of 0 means no distribution change, while higher values indicate stronger changes between the early and late time windows. They are distribution-change signals, not formal drift detection.
                         </p>
                         <RelatedWarnings warnings={warningGroups.drift} />
                 </SummaryDetail>
             )}
 
-            {!driftSignals && (
-                <RelatedWarnings warnings={warningGroups.drift} title="Drift-oriented warnings" />
-            )}
+        </div>
+    );
+}
+
+function ReviewerNotesSection({ notes, onChange }) {
+    const noteFields = [
+        ["dataQuality", "Data Quality Notes"],
+        ["suitability", "Suitability Notes"],
+        ["bias", "Bias / Event-Log Notes"],
+        ["privacy", "Privacy Notes"],
+        ["overall", "Overall Review Notes"],
+    ];
+
+    return (
+        <div className="card reviewer-notes-card">
+            <h3>Reviewer Notes</h3>
+            <p className="section-copy">
+                Optional notes can be used to document human interpretation of warnings before printing or saving the report as PDF.
+            </p>
+            <div className="reviewer-notes-grid">
+                {noteFields.map(([key, label]) => (
+                    <label className="reviewer-note-field" key={key}>
+                        <span>{label}</span>
+                        <textarea
+                            value={notes[key]}
+                            onChange={(event) => onChange(key, event.target.value)}
+                            placeholder="Add reviewer context or justification..."
+                            rows={4}
+                        />
+                    </label>
+                ))}
+            </div>
         </div>
     );
 }
 
 function SummaryPage({ result, onBack, goHome }) {
+    const [reviewerNotes, setReviewerNotes] = useState({
+        dataQuality: "",
+        suitability: "",
+        bias: "",
+        privacy: "",
+        overall: "",
+    });
     const warningCount = getWarningCount(result);
-    const featureDistributionSummary = result.bias_analysis?.feature_distribution_summary || {};
+    const regularFeatureSummary = result.bias_analysis?.feature_distribution_summary || {};
+    const storedEventLogSummary = result.bias_analysis?.event_log_summary || {};
     const hideDuplicateActivityDistribution = isTargetActivityColumn(result);
-    const eventLogSummary = Object.fromEntries(
-        EVENT_LOG_FEATURES
-            .filter((key) => featureDistributionSummary[key])
-            .filter((key) => !(hideDuplicateActivityDistribution && key === "Event-log activity distribution"))
-            .map((key) => [key, featureDistributionSummary[key]])
-    );
-    const regularFeatureSummary = Object.fromEntries(
-        Object.entries(featureDistributionSummary)
-            .filter(([key]) => !EVENT_LOG_FEATURES.includes(key))
-    );
+    const eventLogSummary = hideDuplicateActivityDistribution
+        ? Object.fromEntries(
+            Object.entries(storedEventLogSummary)
+                .filter(([key]) => key !== "Event-log activity distribution")
+        )
+        : storedEventLogSummary;
     const classDistribution = result.bias_analysis?.class_distribution || {};
     const biasWarningGroups = getBiasWarningGroups(result.bias_analysis?.warnings || []);
+
+    const handleReviewerNoteChange = (key, value) => {
+        setReviewerNotes((previousNotes) => ({
+            ...previousNotes,
+            [key]: value,
+        }));
+    };
 
     return (
         <div>
@@ -446,6 +498,11 @@ function SummaryPage({ result, onBack, goHome }) {
                 </p>
                 <WarningSection warnings={result.privacy_analysis?.warnings} />
             </div>
+
+            <ReviewerNotesSection
+                notes={reviewerNotes}
+                onChange={handleReviewerNoteChange}
+            />
 
             <div className="nav-actions">
                 <button className="button-secondary" type="button" onClick={onBack}>Back</button>

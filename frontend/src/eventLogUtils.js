@@ -44,7 +44,7 @@ export function detectEventLogColumns(columns = []) {
 export function isTargetActivityColumn(result) {
     const taskType = normalizeColumnName(result.metadata?.task_type || "");
     const targetColumn = normalizeColumnName(result.metadata?.target_column || "");
-    const columns = result.schema_info?.columns || result.schema_info?.column_names || [];
+    const columns = result.schema_info?.columns || [];
     const detected = detectEventLogColumns(columns);
     const activityColumn = normalizeColumnName(detected.activity || "");
 

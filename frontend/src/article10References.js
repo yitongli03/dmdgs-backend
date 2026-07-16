@@ -21,8 +21,9 @@ export const ARTICLE_10_REFERENCES = {
     suitability: {
         references: [
             "Article 10(2)(d): formulation of assumptions about what the data are supposed to measure and represent.",
-            "Article 10(2)(e): assessment of dataset suitability.",
-            "Article 10(3): datasets should take into account the intended purpose of the AI system.",
+            "Article 10(2)(e): assessment of the availability, quantity, and suitability of datasets.",
+            "Article 10(3): datasets should be relevant, representative, complete, and free of errors in view of the intended purpose.",
+            "Article 10(4): datasets should take into account the specific geographical, contextual, behavioural, or functional setting of intended use.",
         ],
         coverage: "This perspective compares dataset structure, target-column information, task type, deployment context, and event-log structure with the declared intended use. It supports review of whether the dataset appears structurally compatible with the planned analytical task.",
         scope: COMMON_SCOPE_NOTE,
@@ -40,7 +41,6 @@ export const ARTICLE_10_REFERENCES = {
         references: [
             "Article 10(2)(b): original collection purpose in the case of personal data.",
             "Article 10(5): processing of special categories of personal data for bias detection and correction under specific safeguards.",
-            "Article 10(6): appropriate safeguards for special categories of personal data.",
         ],
         coverage: "This perspective combines user-provided privacy information with heuristic detection of potentially personal columns. It helps reviewers identify where privacy documentation, safeguards, or additional legal review may be needed.",
         scope: "The prototype does not determine whether processing is legally permissible. Privacy warnings are governance-support signals and require human/legal review.",

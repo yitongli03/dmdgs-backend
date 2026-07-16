@@ -1,4 +1,5 @@
 import { StatusBadge, WarningList } from "./components";
+import { EVENT_LOG_FEATURES } from "./eventLogUtils";
 
 export const formatNumber = (value) => {
     if (value === null || value === undefined) return "Not applicable";
@@ -56,6 +57,22 @@ export const convertDatasetDocumentToResult = (datasetDocument) => {
         bias_warnings: flags.bias_warnings || flags.bias_issues || [],
         privacy_warnings: flags.privacy_warnings || flags.privacy_issues || [],
     };
+    const storedFeatureSummary =
+        datasetDocument.analysis?.bias?.feature_distribution_summary || {};
+    const storedEventLogSummary =
+        datasetDocument.analysis?.bias?.event_log_summary || {};
+    const legacyEventLogSummary = Object.fromEntries(
+        EVENT_LOG_FEATURES
+            .filter((key) => storedFeatureSummary[key])
+            .map((key) => [key, storedFeatureSummary[key]])
+    );
+    const featureDistributionSummary = Object.fromEntries(
+        Object.entries(storedFeatureSummary)
+            .filter(([key]) => !EVENT_LOG_FEATURES.includes(key))
+    );
+    const eventLogSummary = Object.keys(storedEventLogSummary).length > 0
+        ? storedEventLogSummary
+        : legacyEventLogSummary;
 
     return {
         dataset_id: datasetDocument.dataset_id || "Unknown",
@@ -64,7 +81,7 @@ export const convertDatasetDocumentToResult = (datasetDocument) => {
         schema_info: datasetDocument.schema_info || {
             num_rows: 0,
             num_columns: 0,
-            column_names: [],
+            columns: [],
         },
         data_quality_analysis: {
             missing_value_ratio:
@@ -85,7 +102,9 @@ export const convertDatasetDocumentToResult = (datasetDocument) => {
             imbalance_ratio:
                 datasetDocument.analysis?.bias?.imbalance_ratio ?? null,
             feature_distribution_summary:
-                datasetDocument.analysis?.bias?.feature_distribution_summary || {},
+                featureDistributionSummary,
+            event_log_summary:
+                eventLogSummary,
             warnings: normalizedFlags.bias_warnings,
         },
         privacy_analysis: {

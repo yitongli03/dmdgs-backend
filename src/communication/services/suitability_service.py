@@ -46,9 +46,9 @@ def check_suitability(
     if task_type == "classification" and target_column in df.columns:
         unique_values = df[target_column].nunique(dropna=True)
 
-        if unique_values > 20:
+        if unique_values < 2:
             warnings.append(
-                "Target column has many unique values; it may not be suitable for classification because classes may be too granular"
+                "Target column contains fewer than two distinct values; classification requires at least two classes"
             )
 
     if task_type == "regression" and target_column in df.columns:

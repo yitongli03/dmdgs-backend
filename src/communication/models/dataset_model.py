@@ -44,6 +44,7 @@ class BiasResult(BaseModel):
     class_distribution: Dict[str, float] = Field(default_factory=dict)
     imbalance_ratio: Optional[float] = None
     feature_distribution_summary: Dict[str, Any] = Field(default_factory=dict)
+    event_log_summary: Dict[str, Any] = Field(default_factory=dict)
     warnings: List[str] = Field(default_factory=list)
 
 
